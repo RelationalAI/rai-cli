@@ -24,7 +24,7 @@ func addCommands(root *cobra.Command) {
 		Use:   "clone-database database source-database",
 		Short: "Clone a database",
 		Args:  cobra.ExactArgs(2),
-		Run:   createDatabase}
+		Run:   cloneDatabase}
 	cmd.Flags().StringP("engine", "e", "", "default engine")
 	cmd.Flags().Bool("overwrite", false, "overwrite on create")
 	root.AddCommand(cmd)
@@ -66,7 +66,6 @@ func addCommands(root *cobra.Command) {
 		Args:  cobra.ExactArgs(1),
 		Run:   createEngine}
 	cmd.Flags().String("size", "XS", "engine size (default: XS)")
-	cmd.Flags().Bool("nowait", false, "don't wait until complete")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
@@ -74,7 +73,6 @@ func addCommands(root *cobra.Command) {
 		Short: "Delete an engine",
 		Args:  cobra.ExactArgs(1),
 		Run:   deleteEngine}
-	cmd.Flags().Bool("nowait", false, "don't wait until complete")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
@@ -109,8 +107,17 @@ func addCommands(root *cobra.Command) {
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
+		Use:   "load-model database file",
+		Short: "Load model into the given database",
+		Args:  cobra.ExactArgs(2),
+		Run:   loadModel}
+	cmd.Flags().StringP("engine", "e", "", "default engine")
+	cmd.Flags().StringP("model", "m", "", "model name (default: file name)")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
 		Use:   "load-models database file+",
-		Short: "Install models in the given database",
+		Short: "Load models into the given database",
 		Args:  cobra.MinimumNArgs(2),
 		Run:   loadModels}
 	cmd.Flags().StringP("engine", "e", "", "default engine")
@@ -121,6 +128,14 @@ func addCommands(root *cobra.Command) {
 		Short: "List all models in the given database",
 		Args:  cobra.ExactArgs(1),
 		Run:   listModels}
+	cmd.Flags().StringP("engine", "e", "", "default engine")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "list-model-names database",
+		Short: "List the names of all models in the given database",
+		Args:  cobra.ExactArgs(1),
+		Run:   listModelNames}
 	cmd.Flags().StringP("engine", "e", "", "default engine")
 	root.AddCommand(cmd)
 
@@ -138,6 +153,13 @@ func addCommands(root *cobra.Command) {
 		Short: "Delete an OAuth client",
 		Args:  cobra.ExactArgs(1),
 		Run:   deleteOAuthClient}
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "find-oauth-client client-name",
+		Short: "Get information about the OAuth client with the given client-name",
+		Args:  cobra.ExactArgs(1),
+		Run:   findOAuthClient}
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
@@ -201,7 +223,14 @@ func addCommands(root *cobra.Command) {
 		Short: "Create a user",
 		Args:  cobra.ExactArgs(1),
 		Run:   createUser}
-	cmd.Flags().StringArray("roles", nil, "user roles")
+	cmd.Flags().StringArray("role", nil, "user roles")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "delete-user user-id",
+		Short: "Delete a user",
+		Args:  cobra.ExactArgs(1),
+		Run:   deleteUser}
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
@@ -244,15 +273,22 @@ func addCommands(root *cobra.Command) {
 		Args:  cobra.ExactArgs(1),
 		Run:   updateUser}
 	cmd.Flags().String("status", "", "user status")
-	cmd.Flags().StringArray("roles", nil, "user roles")
+	cmd.Flags().StringArray("role", nil, "user roles")
 	root.AddCommand(cmd)
+
+	// Misc
+
+	cmd = &cobra.Command{
+		Use:   "get-access-token",
+		Short: "Get OAuth access token",
+		Run:   getAccessToken}
+	root.AddCommand(cmd)
+
 }
 
 func main() {
 	var root = &cobra.Command{Use: "rai"}
 	// todo: additional root options
-	// --loglevel=debug|info|warn|error
-	// --log-dir, log-file, --log-file-max-size
 	// --request-timeout
 	// --token : Bearer token for authenticating API request
 	root.PersistentFlags().String("host", "", "host name")
@@ -261,7 +297,6 @@ func main() {
 	root.PersistentFlags().String("profile", "default", "config profile")
 	root.PersistentFlags().BoolP("quiet", "q", false, "silence status output")
 	root.PersistentFlags().String("format", "json", "format results, 'json' or 'pretty'")
-	root.PersistentFlags().Bool("logtostderr", false, "log output to stderr")
 	addCommands(root)
 	root.Execute()
 }

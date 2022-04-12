@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# resource names
+CLIENTNAME=cli-test-client
+DATABASE=cli-test
+DATABASECLONE=cli-test-clone
+EMAIL=cli-test@relational.ai
+ENGINE=cli-test
+
+RAI='../build/rai'
+
+# reset
+$RAI delete-database $DATABASECLONE
+$RAI delete-database $DATABASE
+$RAI delete-engine $ENGINE
+
+# access token
+$RAI get-access-token
+
+# engines
+$RAI create-engine $ENGINE --size=XS
+$RAI get-engine $ENGINE
+$RAI list-engines
+$RAI list-engines --state=PROVISIONED
+$RAI list-engines --state=NONSENSE
+
+# databases
+$RAI create-database $DATABASE --overwrite
+$RAI get-database $DATABASE
+$RAI list-databases
+$RAI list-databases --state=CREATED
+$RAI list-databases --state=NONSENSE
+$RAI list-edbs $DATABASE -e $ENGINE
+$RAI list-model-names $DATABASE -e $ENGINE
+$RAI list-models $DATABASE -e $ENGINE
+
+# exec
+QUERY="x, x^2, x^3, x^4 from x in {1; 2; 3; 4; 5}"
+$RAI exec $DATABASE -e $ENGINE -c "$QUERY"
+$RAI exec $DATABASE -e $ENGINE -c "$QUERY" --readonly
+
+# load model
+$RAI load-model $DATABASE -e $ENGINE hello.rel
+$RAI list-model-names $DATABASE -e $ENGINE
+$RAI list-models $DATABASE -e $ENGINE
+$RAI get-model $DATABASE -e $ENGINE hello
+$RAI list-edbs $DATABASE -e $ENGINE
+
+# load-csv
+$RAI load-csv $DATABASE -e $ENGINE sample.csv -r sample_csv
+$RAI exec $DATABASE -e $ENGINE -c sample_csv
+$RAI load-csv $DATABASE -e $ENGINE sample_no_header.csv --header-row=0 -r sample_no_header_csv
+$RAI exec $DATABASE -e $ENGINE -c sample_no_header_csv
+$RAI load-csv $DATABASE -e $ENGINE sample_alt_syntax.csv --delim="|" --quotechar="'" -r sample_alt_syntax_csv
+$RAI exec $DATABASE -e $ENGINE -c sample_alt_syntax_csv
+$RAI list-edbs $DATABASE -e $ENGINE
+
+# load-json
+$RAI load-json $DATABASE -e $ENGINE sample.json -r sample_json
+$RAI exec $DATABASE -e $ENGINE -c sample_json
+$RAI list-edbs -e $DATABASE $ENGINE
+
+# clone database
+$RAI create-database $DATABASE -e $ENGINE --overwrite
+$RAI load-json $DATABASE -e $ENGINE sample.json -r sample_json
+$RAI load-model $DATABASE -e $ENGINE hello.rel
+$RAI clone-database $DATABASECLONE -e $ENGINE $DATABASE --overwrite
+$RAI list-databases
+$RAI get-database $DATABASECLONE
+$RAI list-edbs $DATABASECLONE -e $ENGINE
+$RAI list-model-names $DATABASECLONE -e $ENGINE
+$RAI list-models $DATABASECLONE -e $ENGINE
+$RAI get-model $DATABASECLONE -e $ENGINE hello
+
+# oauth-clients
+CLIENTID=`$RAI find-oauth-client $CLIENTNAME | jq -r '.id'`
+if [[ "$CLIENTID" != "" ]]; then
+$RAI delete-oauth-client $CLIENTID
+fi
+$RAI list-oauth-clients
+$RAI create-oauth-client $CLIENTNAME
+$RAI list-oauth-clients
+$RAI find-oauth-client $CLIENTNAME
+CLIENTID=`$RAI find-oauth-client $CLIENTNAME | jq -r '.id'`
+$RAI get-oauth-client $CLIENTID
+$RAI delete-oauth-client $CLIENTID
+$RAI list-oauth-clients
+
+# users
+USERID=`$RAI find-user $EMAIL | jq -r '.id'`
+if [[ "$USERID" != "" ]]; then
+$RAI delete-user "$USERID"
+fi
+$RAI list-users
+$RAI create-user $EMAIL
+$RAI list-users
+$RAI find-user $EMAIL
+USERID=`$RAI find-user $EMAIL | jq -r '.id'`
+$RAI get-user $USERID
+$RAI disable-user $USERID
+$RAI enable-user $USERID
+$RAI update-user $USERID --status=INACTIVE
+$RAI update-user $USERID --status=ACTIVE
+$RAI update-user $USERID --status=ACTIVE --role=admin --role=user
+$RAI update-user $USERID --status=INACTIVE --role=user
+
+# cleanup
+$RAI delete-database $DATABASECLONE
+$RAI delete-database $DATABASE
+$RAI delete-engine $ENGINE
+CLIENTID=`$RAI find-oauth-client $CLIENTNAME | jq -r '.id'`
+if [[ "$CLIENTID" != "" ]]; then
+$RAI delete-oauth-client $CLIENTID
+fi
+USERID=`$RAI find-user $EMAIL | jq -r '.id'`
+if [[ "$USERID" != "" ]]; then
+$RAI delete-user "$USERID"
+fi

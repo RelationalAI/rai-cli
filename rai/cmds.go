@@ -26,12 +26,12 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/relationalai/rai-sdk-go/rai"
-	"github.com/relationalai/raicloud-services/pkg/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -114,7 +114,7 @@ func (a *Action) loadConfig() *rai.Config {
 	fname := a.getString("config")
 	profile := a.getString("profile")
 	if err := rai.LoadConfigFile(fname, profile, &cfg); err != nil {
-		fmt.Printf("\n%s\n", strings.TrimRight(err.Error(), "\r\n"))
+		fmt.Fprintf(os.Stderr, "\n%s\n", strings.TrimRight(err.Error(), "\r\n"))
 	}
 	host := a.getString("host")
 	if host != "" {
@@ -178,7 +178,7 @@ func (a *Action) Append(format string, args ...interface{}) *Action {
 	if a.quiet {
 		return a
 	}
-	fmt.Printf(format, args...)
+	fmt.Fprintf(os.Stderr, format, args...)
 	return a
 }
 
@@ -190,7 +190,7 @@ func (a *Action) Start(format string, args ...interface{}) *Action {
 	var msg string
 	msg = fmt.Sprintf(format, args...)
 	msg = fmt.Sprintf("%s .. ", msg)
-	fmt.Print(msg)
+	fmt.Fprintf(os.Stderr, msg)
 	return a
 }
 
@@ -199,7 +199,6 @@ func (a *Action) Exit(result interface{}, err error) {
 	delta := time.Since(a.start).Seconds()
 	if err != nil {
 		a.Append("(%.1fs)\n%s\n", delta, rtrimEol(err.Error()))
-		logger.Info(err.Error())
 		os.Exit(1)
 	} else {
 		a.Append("Ok (%.1fs)\n", delta)
@@ -210,29 +209,29 @@ func (a *Action) Exit(result interface{}, err error) {
 
 // Pick a random PROVISIONED engine.
 func pickRandomEngine(action *Action) string {
-	items, err := action.Client().ListEngines("state", "PROVISIONED")
+	rsp, err := action.Client().ListEngines("state", "PROVISIONED")
 	if err != nil {
 		action.Exit(nil, err)
 	}
-	switch len(items) {
+	switch len(rsp) {
 	case 0:
 		action.Exit(nil, ErrNoEngines)
 	case 1:
-		return items[0].Name
+		return rsp[0].Name
 	}
-	ix := rand.Intn(len(items))
-	return items[ix].Name
+	ix := rand.Intn(len(rsp))
+	return rsp[ix].Name
 }
 
 // Pick the most recently created PROVISIONED engine.
 func pickLatestEngine(action *Action) string {
-	items, err := action.Client().ListEngines("state", "PROVISIONED")
+	rsp, err := action.Client().ListEngines("state", "PROVISIONED")
 	if err != nil {
 		action.Exit(nil, err)
 	}
 	var best *rai.Engine
-	for i := 0; i < len(items); i++ {
-		item := &items[i]
+	for i := 0; i < len(rsp); i++ {
+		item := &rsp[i]
 		if best == nil || best.CreatedOn < item.CreatedOn {
 			best = item
 		}
@@ -268,45 +267,28 @@ func isStatusNotFound(err error) bool {
 	return e.StatusCode == http.StatusNotFound
 }
 
-// Wait for the engine to reach the given target state.
-func waitEngine(action *Action, name, targetState string) (*rai.Engine, error) {
-	for {
-		time.Sleep(2 * time.Second)
-		item, err := action.Client().GetEngine(name)
-		if err != nil {
-			if isStatusNotFound(err) {
-				return nil, nil
-			}
-			return nil, err
-		}
-		if item == nil || isTerminalState(item.State, targetState) {
-			return item, err
-		}
-	}
-}
-
 //
 // Databases
 //
 
 func cloneDatabase(cmd *cobra.Command, args []string) {
 	// assert len(args) == 2
-	action := newAction(cmd)
 	name, source := args[0], args[1]
+	action := newAction(cmd)
 	engine := action.getString("engine")
 	overwrite := action.getBool("overwrite")
 	if engine == "" {
 		engine = pickEngine(action)
 	}
 	action.Start("Clone database '%s' from '%s' (/%s)", name, source, engine)
-	rsp, err := action.Client().CreateDatabase(name, engine, overwrite)
+	rsp, err := action.Client().CloneDatabase(name, engine, source, overwrite)
 	action.Exit(rsp, err)
 }
 
 func createDatabase(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
-	action := newAction(cmd)
 	name := args[0]
+	action := newAction(cmd)
 	engine := action.getString("engine")
 	overwrite := action.getBool("overwrite")
 	if engine == "" {
@@ -319,8 +301,8 @@ func createDatabase(cmd *cobra.Command, args []string) {
 
 func deleteDatabase(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
-	action := newAction(cmd)
 	name := args[0]
+	action := newAction(cmd)
 	action.Start("Delete database '%s'", name)
 	err := action.Client().DeleteDatabase(name)
 	action.Exit(nil, err)
@@ -328,24 +310,24 @@ func deleteDatabase(cmd *cobra.Command, args []string) {
 
 func getDatabase(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
-	action := newAction(cmd)
 	name := args[0]
+	action := newAction(cmd)
 	action.Start("Get database '%s", name)
-	item, err := action.Client().GetDatabase(name)
-	action.Exit(item, err)
+	rsp, err := action.Client().GetDatabase(name)
+	action.Exit(rsp, err)
 }
 
 func listDatabases(cmd *cobra.Command, args []string) {
 	// assert len(args) == 0
-	action := newAction(cmd)
 	filters := map[string]interface{}{}
+	action := newAction(cmd)
 	state := action.getStringArray("state")
 	if state != nil {
 		filters["state"] = state
 	}
 	action.Start("List databases")
-	items, err := action.Client().ListDatabases(filters)
-	action.Exit(items, err)
+	rsp, err := action.Client().ListDatabases(filters)
+	action.Exit(rsp, err)
 }
 
 //
@@ -355,14 +337,11 @@ func listDatabases(cmd *cobra.Command, args []string) {
 func createEngine(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	name := args[0]
-	size, _ := cmd.Flags().GetString("size")
-	nowait, _ := cmd.Flags().GetBool("nowait")
-	action := newAction(cmd).Start("Create engine '%s' size=%s", name, size)
-	item, err := action.Client().CreateEngine(name, size)
-	if err == nil && !nowait {
-		item, err = waitEngine(action, name, "PROVISIONED")
-	}
-	action.Exit(item, err)
+	action := newAction(cmd)
+	size := action.getString("size")
+	action.Start("Create engine '%s' size=%s", name, size)
+	rsp, err := action.Client().CreateEngine(name, size)
+	action.Exit(rsp, err)
 }
 
 func deleteEngine(cmd *cobra.Command, args []string) {
@@ -376,24 +355,24 @@ func deleteEngine(cmd *cobra.Command, args []string) {
 
 func getEngine(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
-	action := newAction(cmd)
 	engine := args[0]
+	action := newAction(cmd)
 	action.Start("Get engine '%s", engine)
-	item, err := action.Client().GetEngine(engine)
-	action.Exit(item, err)
+	rsp, err := action.Client().GetEngine(engine)
+	action.Exit(rsp, err)
 }
 
 func listEngines(cmd *cobra.Command, args []string) {
 	// assert len(args) == 0
+	filters := map[string]interface{}{}
 	action := newAction(cmd)
-	filters := map[string][]string{}
 	state := action.getStringArray("state")
 	if state != nil {
 		filters["state"] = state
 	}
 	action.Start("List engines")
-	items, err := action.Client().ListEngines(filters)
-	action.Exit(items, err)
+	rsp, err := action.Client().ListEngines(filters)
+	action.Exit(rsp, err)
 }
 
 //
@@ -402,35 +381,43 @@ func listEngines(cmd *cobra.Command, args []string) {
 
 func createOAuthClient(cmd *cobra.Command, args []string) {
 	// assert len(args) == 0
-	action := newAction(cmd)
 	name := args[0]
+	action := newAction(cmd)
 	perms := action.getStringArray("perms")
 	action.Start("Create OAuth Client '%s' perms=%s", name, strings.Join(perms, ","))
-	item, err := action.Client().CreateOAuthClient(name, perms)
-	action.Exit(item, err)
+	rsp, err := action.Client().CreateOAuthClient(name, perms)
+	action.Exit(rsp, err)
 }
 
 func deleteOAuthClient(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	id := args[0]
 	action := newAction(cmd).Start("Delete OAuth Client '%s'", id)
-	item, err := action.Client().DeleteOAuthClient(id)
-	action.Exit(item, err)
+	rsp, err := action.Client().DeleteOAuthClient(id)
+	action.Exit(rsp, err)
+}
+
+func findOAuthClient(cmd *cobra.Command, args []string) {
+	// assert len(args) == 1
+	name := args[0]
+	action := newAction(cmd).Start("Find OAuth Client '%s'", name)
+	rsp, err := action.Client().FindOAuthClient(name)
+	action.Exit(rsp, err)
 }
 
 func getOAuthClient(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	id := args[0]
 	action := newAction(cmd).Start("Get OAuth Client '%s'", id)
-	item, err := action.Client().GetOAuthClient(id)
-	action.Exit(item, err)
+	rsp, err := action.Client().GetOAuthClient(id)
+	action.Exit(rsp, err)
 }
 
 func listOAuthClients(cmd *cobra.Command, args []string) {
 	// assert len(args) == 0
 	action := newAction(cmd).Start("List OAuth Clients ..")
-	items, err := action.Client().ListOAuthClients()
-	action.Exit(items, err)
+	rsp, err := action.Client().ListOAuthClients()
+	action.Exit(rsp, err)
 }
 
 //
@@ -447,22 +434,22 @@ func deleteModel(cmd *cobra.Command, args []string) {
 		engine = pickEngine(action)
 	}
 	action.Start("Delete model '%s' (%s/%s)", strings.Join(models, ", "), database, engine)
-	item, err := action.Client().DeleteModels(database, engine, models)
-	action.Exit(item, err)
+	rsp, err := action.Client().DeleteModels(database, engine, models)
+	action.Exit(rsp, err)
 }
 
 func getModel(cmd *cobra.Command, args []string) {
 	// assert len(args) == 2
 	database := args[0]
 	model := args[1]
-	engine, _ := cmd.Flags().GetString("engine")
 	action := newAction(cmd)
+	engine := action.getString("engine")
 	if engine == "" {
 		engine = pickEngine(action)
 	}
 	action.Start("Get model '%s' (%s/%s)", model, database, engine)
-	item, err := action.Client().GetModel(database, engine, model)
-	action.Exit(item, err)
+	rsp, err := action.Client().GetModel(database, engine, model)
+	action.Exit(rsp, err)
 }
 
 // Return the list of keys corresponding to the given map.
@@ -476,23 +463,60 @@ func mapKeys(m map[string]io.Reader) []string {
 	return keys
 }
 
+func listModelNames(cmd *cobra.Command, args []string) {
+	// assert len(args) == 1
+	database := args[0]
+	action := newAction(cmd)
+	engine := action.getString("engine")
+	if engine == "" {
+		engine = pickEngine(action)
+	}
+	action.Start("List model names '%s' (/%s)", database, engine)
+	rsp, err := action.Client().ListModelNames(database, engine)
+	action.Exit(rsp, err)
+}
+
 func listModels(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	database := args[0]
-	engine, _ := cmd.Flags().GetString("engine")
 	action := newAction(cmd)
+	engine := action.getString("engine")
 	if engine == "" {
 		engine = pickEngine(action)
 	}
 	action.Start("List models '%s' (/%s)", database, engine)
-	items, err := action.Client().ListModels(database, engine)
-	action.Exit(items, err)
+	rsp, err := action.Client().ListModels(database, engine)
+	action.Exit(rsp, err)
 }
 
+// Load a single model, with the option of setting the model name.
+func loadModel(cmd *cobra.Command, args []string) {
+	// assert len(args) == 2
+	database, fname := args[0], args[1]
+	r, err := os.Open(fname)
+	if err != nil {
+		fatal(err.Error())
+	}
+	action := newAction(cmd)
+	mname := action.getString("model")
+	if mname == "" {
+		mname = baseSansExt(fname)
+	}
+	engine := action.getString("engine")
+	if engine == "" {
+		engine = pickEngine(action)
+	}
+	action.Start("Load model '%s' as '%s' (%s/%s)", fname, mname, database, engine)
+	_, err = action.Client().LoadModel(database, engine, mname, r)
+	action.Exit(nil, err) // ignore response
+}
+
+// Load one or more models, using the file names for the model name.
 func loadModels(cmd *cobra.Command, args []string) {
 	// assert len(args) >= 2
 	database := args[0]
-	engine, _ := cmd.Flags().GetString("engine")
+	action := newAction(cmd)
+	engine := action.getString("engine")
 	models := map[string]io.Reader{}
 	for _, arg := range args[1:] {
 		name := baseSansExt(arg)
@@ -502,7 +526,6 @@ func loadModels(cmd *cobra.Command, args []string) {
 		}
 		models[name] = r
 	}
-	action := newAction(cmd)
 	if engine == "" {
 		engine = pickEngine(action)
 	}
@@ -516,12 +539,12 @@ func loadModels(cmd *cobra.Command, args []string) {
 //
 
 // Retrieve query source from command option or named source file.
-func getQuerySource(cmd *cobra.Command, args []string) string {
-	source, _ := cmd.Flags().GetString("code")
+func getQuerySource(action *Action, args []string) string {
+	source := action.getString("code")
 	if source != "" {
 		return source
 	}
-	fname, _ := cmd.Flags().GetString("file")
+	fname := action.getString("file")
 	if fname == "" {
 		fatal("nothing to execute")
 	}
@@ -533,30 +556,30 @@ func getQuerySource(cmd *cobra.Command, args []string) string {
 }
 
 func execQuery(cmd *cobra.Command, args []string) {
-	database := args[0]
-	engine, _ := cmd.Flags().GetString("engine")
-	readonly, _ := cmd.Flags().GetBool("readonly")
-	source := getQuerySource(cmd, args)
 	action := newAction(cmd)
+	database := args[0]
+	source := getQuerySource(action, args)
+	readonly := action.getBool("readonly")
+	engine := action.getString("engine")
 	if engine == "" {
 		engine = pickEngine(action)
 	}
-	action.Start("Executing query (%s/%s)", database, engine)
-	items, err := action.Client().Execute(database, engine, source, nil, readonly)
-	action.Exit(items, err)
+	action.Start("Executing query (%s/%s) readonly=%s", database, engine, strconv.FormatBool(readonly))
+	rsp, err := action.Client().Execute(database, engine, source, nil, readonly)
+	action.Exit(rsp, err)
 }
 
 func listEdbs(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
-	database := args[0]
-	engine, _ := cmd.Flags().GetString("engine")
 	action := newAction(cmd)
+	database := args[0]
+	engine := action.getString("engine")
 	if engine == "" {
 		engine = pickEngine(action)
 	}
 	action.Start("List EDBs '%s' (/%s)", database, engine)
-	items, err := action.Client().ListEDBs(database, engine)
-	action.Exit(items, err)
+	rsp, err := action.Client().ListEDBs(database, engine)
+	action.Exit(rsp, err)
 }
 
 // Returns load-csv options specified on command
@@ -584,10 +607,9 @@ func getCSVOptions(a *Action) *rai.CSVOptions {
 func loadCSV(cmd *cobra.Command, args []string) {
 	// assert len(args) == 2
 	action := newAction(cmd)
-	database := args[0]
-	fname := args[1]
-	engine, _ := cmd.Flags().GetString("engine")
-	relation, _ := cmd.Flags().GetString("relation")
+	database, fname := args[0], args[1]
+	engine := action.getString("engine")
+	relation := action.getString("relation")
 	if relation == "" {
 		relation = baseSansExt(fname)
 	}
@@ -600,8 +622,8 @@ func loadCSV(cmd *cobra.Command, args []string) {
 		engine = pickEngine(action)
 	}
 	action.Start("Load CSV '%s' (%s/%s)", relation, database, engine)
-	_, err = action.Client().LoadCSV(database, engine, relation, r, opts)
-	action.Exit(nil, err) // ignore response
+	rsp, err := action.Client().LoadCSV(database, engine, relation, r, opts)
+	action.Exit(rsp, err) // ignore response
 }
 
 func loadJSON(cmd *cobra.Command, args []string) {
@@ -622,8 +644,8 @@ func loadJSON(cmd *cobra.Command, args []string) {
 		engine = pickEngine(action)
 	}
 	action.Start("Load JSON '%s' (%s/%s)", relation, database, engine)
-	_, err = action.Client().LoadJSON(database, engine, relation, data)
-	action.Exit(nil, err) // ignore response
+	rsp, err := action.Client().LoadJSON(database, engine, relation, data)
+	action.Exit(rsp, err) // ignore response
 }
 
 //
@@ -634,34 +656,42 @@ func createUser(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	action := newAction(cmd)
 	email := args[0]
-	roles, _ := cmd.Flags().GetStringArray("roles")
+	roles := action.getStringArray("roles")
 	action.Start("Create user '%s' roles=%s", email, strings.Join(roles, ","))
-	item, err := action.Client().CreateUser(email, roles)
-	action.Exit(item, err)
+	rsp, err := action.Client().CreateUser(email, roles)
+	action.Exit(rsp, err)
+}
+
+func deleteUser(cmd *cobra.Command, args []string) {
+	// assert len(args) == 1
+	id := args[0]
+	action := newAction(cmd).Start("Delete user '%s'", id)
+	rsp, err := action.Client().DeleteUser(id)
+	action.Exit(rsp, err)
 }
 
 func disableUser(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	id := args[0]
 	action := newAction(cmd).Start("Disable user '%s'", id)
-	item, err := action.Client().DisableUser(id)
-	action.Exit(item, err)
+	rsp, err := action.Client().DisableUser(id)
+	action.Exit(rsp, err)
 }
 
 func enableUser(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	id := args[0]
 	action := newAction(cmd).Start("Enable user '%s'", id)
-	item, err := action.Client().EnableUser(id)
-	action.Exit(item, err)
+	rsp, err := action.Client().EnableUser(id)
+	action.Exit(rsp, err)
 }
 
 func getUser(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	id := args[0]
 	action := newAction(cmd).Start("Get user '%s'", id)
-	item, err := action.Client().GetUser(id)
-	action.Exit(item, err)
+	rsp, err := action.Client().GetUser(id)
+	action.Exit(rsp, err)
 }
 
 // Returns the user-id corresponding to the given email.
@@ -669,15 +699,15 @@ func findUser(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	email := args[0]
 	action := newAction(cmd).Start("Find user '%s'", email)
-	user, err := action.Client().FindUser(email)
-	action.Exit(user, err)
+	rsp, err := action.Client().FindUser(email)
+	action.Exit(rsp, err)
 }
 
 func listUsers(cmd *cobra.Command, args []string) {
 	// assert len(args) == 0
 	action := newAction(cmd).Start("List users")
-	items, err := action.Client().ListUsers()
-	action.Exit(items, err)
+	rsp, err := action.Client().ListUsers()
+	action.Exit(rsp, err)
 }
 
 func updateUser(cmd *cobra.Command, args []string) {
@@ -688,6 +718,16 @@ func updateUser(cmd *cobra.Command, args []string) {
 	roles := action.getStringArray("roles")
 	req := rai.UpdateUserRequest{Status: status, Roles: roles}
 	action.Start("Update user '%s' status=%s", id, status)
-	item, err := action.Client().UpdateUser(id, req)
-	action.Exit(item, err)
+	rsp, err := action.Client().UpdateUser(id, req)
+	action.Exit(rsp, err)
+}
+
+// Misc
+
+func getAccessToken(cmd *cobra.Command, args []string) {
+	// assert len(args) == 0
+	action := newAction(cmd)
+	action.Start("Get access token")
+	rsp, err := action.Client().AccessToken()
+	action.Exit(rsp, err)
 }

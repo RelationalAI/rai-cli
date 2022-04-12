@@ -1,0 +1,142 @@
+Find user 'cli-test@relational.ai' .. Ok (0.7s)
+Error: unknown command "./list-users" for "rai"
+
+Did you mean this?
+	list-users
+
+Run 'rai --help' for usage.
+Error: unknown command "./create-user" for "rai"
+
+Did you mean this?
+	create-user
+
+Run 'rai --help' for usage.
+Error: unknown command "./list-users" for "rai"
+
+Did you mean this?
+	list-users
+
+Run 'rai --help' for usage.
+Error: unknown command "./find-user" for "rai"
+
+Did you mean this?
+	find-user
+
+Run 'rai --help' for usage.
+Find user 'cli-test@relational.ai' .. Ok (0.7s)
+Error: accepts 1 arg(s), received 0
+Usage:
+  rai get-user user-id [flags]
+
+Flags:
+  -h, --help   help for get-user
+
+Global Flags:
+      --config string    config file (default "~/.rai/config")
+      --format string    format results, 'json' or 'pretty' (default "json")
+      --host string      host name
+      --port string      port number
+      --profile string   config profile (default "default")
+  -q, --quiet            silence status output
+
+Error: accepts 1 arg(s), received 0
+Usage:
+  rai disable-user user-id [flags]
+
+Flags:
+  -h, --help   help for disable-user
+
+Global Flags:
+      --config string    config file (default "~/.rai/config")
+      --format string    format results, 'json' or 'pretty' (default "json")
+      --host string      host name
+      --port string      port number
+      --profile string   config profile (default "default")
+  -q, --quiet            silence status output
+
+Error: accepts 1 arg(s), received 0
+Usage:
+  rai enable-user user-id [flags]
+
+Flags:
+  -h, --help   help for enable-user
+
+Global Flags:
+      --config string    config file (default "~/.rai/config")
+      --format string    format results, 'json' or 'pretty' (default "json")
+      --host string      host name
+      --port string      port number
+      --profile string   config profile (default "default")
+  -q, --quiet            silence status output
+
+Error: accepts 1 arg(s), received 0
+Usage:
+  rai update-user user-id [flags]
+
+Flags:
+  -h, --help                help for update-user
+      --roles stringArray   user roles
+      --status string       user status
+
+Global Flags:
+      --config string    config file (default "~/.rai/config")
+      --format string    format results, 'json' or 'pretty' (default "json")
+      --host string      host name
+      --port string      port number
+      --profile string   config profile (default "default")
+  -q, --quiet            silence status output
+
+Error: accepts 1 arg(s), received 0
+Usage:
+  rai update-user user-id [flags]
+
+Flags:
+  -h, --help                help for update-user
+      --roles stringArray   user roles
+      --status string       user status
+
+Global Flags:
+      --config string    config file (default "~/.rai/config")
+      --format string    format results, 'json' or 'pretty' (default "json")
+      --host string      host name
+      --port string      port number
+      --profile string   config profile (default "default")
+  -q, --quiet            silence status output
+
+Update user 'user' status= .. (0.6s)
+404 Not Found
+{"status":"Not Found","message":"user not found"}
+Error: accepts 1 arg(s), received 0
+Usage:
+  rai update-user user-id [flags]
+
+Flags:
+  -h, --help                help for update-user
+      --roles stringArray   user roles
+      --status string       user status
+
+Global Flags:
+      --config string    config file (default "~/.rai/config")
+      --format string    format results, 'json' or 'pretty' (default "json")
+      --host string      host name
+      --port string      port number
+      --profile string   config profile (default "default")
+  -q, --quiet            silence status output
+
+Error: accepts 1 arg(s), received 0
+Usage:
+  rai update-user user-id [flags]
+
+Flags:
+  -h, --help                help for update-user
+      --roles stringArray   user roles
+      --status string       user status
+
+Global Flags:
+      --config string    config file (default "~/.rai/config")
+      --format string    format results, 'json' or 'pretty' (default "json")
+      --host string      host name
+      --port string      port number
+      --profile string   config profile (default "default")
+  -q, --quiet            silence status output
+

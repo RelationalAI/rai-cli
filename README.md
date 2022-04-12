@@ -7,6 +7,18 @@ The RelationalAI (RAI) CLI provides access to the RAI APIs from the command line
 
 ## Getting started
 
+### Building the CLI
+
+Update dependencies
+
+	./tidy
+	
+Build the `rai` binary
+
+	go build -o build/rai rai/*
+	
+Installation consists of simply putting the `rai` binary on your path.
+
 ### Create a configuration file
 
 In order to use the CLI, you will need to create config file. The default location

@@ -592,8 +592,8 @@ github.com/prometheus/procfs v0.0.0-20180125133057-cb4147076ac7/go.mod h1:c3At6R
 github.com/prometheus/procfs v0.0.0-20181204211112-1dc9a6cbc91a/go.mod h1:c3At6R/oaqEKCNdg8wHV1ftS6bRYblBhIjjI8uT2IGk=
 github.com/prometheus/procfs v0.0.8/go.mod h1:7Qr8sr6344vo1JqZ6HhLceV9o3AJ1Ff+GxbHq6oeK9A=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
-github.com/relationalai/rai-sdk-go v0.0.0-20220412185912-b3375fb35fb1 h1:yhWL7c5JkdPiEQ1ZhlXINkchSARSrLwpeT28SRa/WCY=
-github.com/relationalai/rai-sdk-go v0.0.0-20220412185912-b3375fb35fb1/go.mod h1:tZaBW524iLWEka/Y7Go9mYXBNDfHVWqNtxgyA1eXyv0=
+github.com/relationalai/rai-sdk-go v0.0.0-20220412193436-5e257655ed3b h1:TdJCGoPyv/F8iaMgod5dOGM+KnShh2T6ag/i/uLJ/UQ=
+github.com/relationalai/rai-sdk-go v0.0.0-20220412193436-5e257655ed3b/go.mod h1:tZaBW524iLWEka/Y7Go9mYXBNDfHVWqNtxgyA1eXyv0=
 github.com/relationalai/raicloud-services v0.0.0-20220107195619-61c97e11a172 h1:6fuiYhi8sso0zdblACbBTv3o+KIvGPWYTT2UTBobuGM=
 github.com/relationalai/raicloud-services v0.0.0-20220107195619-61c97e11a172/go.mod h1:ZiRamvKxkaIj4t2OHYQY+qPC5glXMM4/o4vSHvaatew=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
