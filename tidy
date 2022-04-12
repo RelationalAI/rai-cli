@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export GOPRIVATE="github.com/relationalai/*"
+go get -u ./rai/...
+go mod tidy -compat=1.17
