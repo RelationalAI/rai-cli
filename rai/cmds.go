@@ -312,7 +312,7 @@ func getDatabase(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	name := args[0]
 	action := newAction(cmd)
-	action.Start("Get database '%s", name)
+	action.Start("Get database '%s'", name)
 	rsp, err := action.Client().GetDatabase(name)
 	action.Exit(rsp, err)
 }
@@ -357,7 +357,7 @@ func getEngine(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	engine := args[0]
 	action := newAction(cmd)
-	action.Start("Get engine '%s", engine)
+	action.Start("Get engine '%s'", engine)
 	rsp, err := action.Client().GetEngine(engine)
 	action.Exit(rsp, err)
 }
@@ -722,7 +722,9 @@ func updateUser(cmd *cobra.Command, args []string) {
 	action.Exit(rsp, err)
 }
 
+//
 // Misc
+//
 
 func getAccessToken(cmd *cobra.Command, args []string) {
 	// assert len(args) == 0
