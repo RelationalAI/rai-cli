@@ -15,7 +15,7 @@ Update dependencies with the  `tidy` script
 
 Build the `rai` binary using the `go` tool
 
-    go build -o build/rai rai/*o
+    go build -o build/rai rai/*
 
 .. or use the handy `make` script
 
