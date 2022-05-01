@@ -114,7 +114,8 @@ func (a *Action) loadConfig() *rai.Config {
 	fname := a.getString("config")
 	profile := a.getString("profile")
 	if err := rai.LoadConfigFile(fname, profile, &cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "\n%s\n", strings.TrimRight(err.Error(), "\r\n"))
+		fmt.Fprintf(os.Stderr, "\n")
+		fatal(strings.TrimRight(err.Error(), "\r\n"))
 	}
 	host := a.getString("host")
 	if host != "" {
