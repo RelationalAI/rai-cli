@@ -296,7 +296,7 @@ func main() {
 	root.PersistentFlags().String("config", "~/.rai/config", "config file")
 	root.PersistentFlags().String("profile", "default", "config profile")
 	root.PersistentFlags().BoolP("quiet", "q", false, "silence status output")
-	root.PersistentFlags().String("format", "json", "format results, 'json' or 'pretty'")
+	root.PersistentFlags().String("format", "pretty", "format results, 'json' or 'pretty'")
 	addCommands(root)
 	root.Execute()
 }

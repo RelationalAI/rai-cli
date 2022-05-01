@@ -587,7 +587,7 @@ func getCSVOptions(a *Action) *rai.CSVOptions {
 	opts := &rai.CSVOptions{}
 	n := a.getInt("header-row")
 	if n >= 0 {
-		opts.HeaderRow = n
+		opts.HeaderRow = &n
 	}
 	c := a.getRune("delim")
 	if c != 0 {
