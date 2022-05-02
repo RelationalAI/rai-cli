@@ -583,6 +583,30 @@ func listEdbs(cmd *cobra.Command, args []string) {
 	action.Exit(rsp, err)
 }
 
+// Parse the schema option string into the schema definition map that is
+// expected by the golang client.
+//
+// The schema definition consists of a sequence of semicolon delimited
+// <column>:<type> pairs that are parsed into a column => type map, eg:
+//
+//   --schema='cocktail:string;quantity:int;price:decimal(64,2);date:date'
+func parseSchema(a *Action) map[string]string {
+	schema := a.getString("schema")
+	if schema == "" {
+		return nil
+	}
+	result := map[string]string{}
+	parts := strings.Split(schema, ";")
+	for _, part := range parts {
+		item := strings.Split(part, ":")
+		if len(item) != 2 {
+			fatal("bad schema definition '%s', expected '<column>:<type>'", item)
+		}
+		result[item[0]] = item[1]
+	}
+	return result
+}
+
 // Returns load-csv options specified on command
 func getCSVOptions(a *Action) *rai.CSVOptions {
 	opts := &rai.CSVOptions{}
@@ -602,6 +626,7 @@ func getCSVOptions(a *Action) *rai.CSVOptions {
 	if c != 0 {
 		opts.QuoteChar = c
 	}
+	opts.Schema = parseSchema(a)
 	return opts
 }
 

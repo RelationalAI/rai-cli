@@ -205,6 +205,7 @@ func addCommands(root *cobra.Command) {
 	cmd.Flags().String("delim", "", "field delimiter")
 	cmd.Flags().String("escapechar", "", "character used to escape quotes")
 	cmd.Flags().String("quotechar", "", "quoted field character")
+	cmd.Flags().String("schema", "", "schema definition")
 	cmd.Flags().StringP("relation", "r", "", "relation name (default: file name)")
 	root.AddCommand(cmd)
 
