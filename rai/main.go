@@ -25,8 +25,6 @@ func addCommands(root *cobra.Command) {
 		Short: "Clone a database",
 		Args:  cobra.ExactArgs(2),
 		Run:   cloneDatabase}
-	cmd.Flags().StringP("engine", "e", "", "default engine")
-	cmd.Flags().Bool("overwrite", false, "overwrite on create")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
@@ -34,8 +32,6 @@ func addCommands(root *cobra.Command) {
 		Short: "Create a database",
 		Args:  cobra.ExactArgs(1),
 		Run:   createDatabase}
-	cmd.Flags().StringP("engine", "e", "", "default engine")
-	cmd.Flags().Bool("overwrite", false, "overwrite on create")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{

@@ -276,13 +276,8 @@ func cloneDatabase(cmd *cobra.Command, args []string) {
 	// assert len(args) == 2
 	name, source := args[0], args[1]
 	action := newAction(cmd)
-	engine := action.getString("engine")
-	overwrite := action.getBool("overwrite")
-	if engine == "" {
-		engine = pickEngine(action)
-	}
-	action.Start("Clone database '%s' from '%s' (/%s)", name, source, engine)
-	rsp, err := action.Client().CloneDatabase(name, engine, source, overwrite)
+	action.Start("Clone database '%s' from '%s'", name, source)
+	rsp, err := action.Client().CloneDatabase(name, source)
 	action.Exit(rsp, err)
 }
 
@@ -290,13 +285,8 @@ func createDatabase(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	name := args[0]
 	action := newAction(cmd)
-	engine := action.getString("engine")
-	overwrite := action.getBool("overwrite")
-	if engine == "" {
-		engine = pickEngine(action)
-	}
-	action.Start("Create database '%s' (/%s)", name, engine)
-	rsp, err := action.Client().CreateDatabase(name, engine, overwrite)
+	action.Start("Create database '%s'", name)
+	rsp, err := action.Client().CreateDatabase(name)
 	action.Exit(rsp, err)
 }
 

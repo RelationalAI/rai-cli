@@ -6,8 +6,8 @@ github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANyt
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
-github.com/relationalai/rai-sdk-go v0.0.0-20220501193859-7214e0740e34 h1:3E4LgpwzV+O8tiuGnGL/54LxbIWp9sWiLU/bzofoKZo=
-github.com/relationalai/rai-sdk-go v0.0.0-20220501193859-7214e0740e34/go.mod h1:tZaBW524iLWEka/Y7Go9mYXBNDfHVWqNtxgyA1eXyv0=
+github.com/relationalai/rai-sdk-go v0.0.0-20220506181533-6bcb5d6552a6 h1:mLzgpelFKBtmQqaliTV9finlvyWjarEs9D5znyFiGFg=
+github.com/relationalai/rai-sdk-go v0.0.0-20220506181533-6bcb5d6552a6/go.mod h1:tZaBW524iLWEka/Y7Go9mYXBNDfHVWqNtxgyA1eXyv0=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/spf13/cobra v1.4.0 h1:y+wJpx64xcgO1V+RcnwW0LEHxTKRi2ZDPSBjWnrg88Q=
 github.com/spf13/cobra v1.4.0/go.mod h1:Wo4iy3BUC+X2Fybo0PDqwJIv3dNRiZLHQymsfxlB84g=

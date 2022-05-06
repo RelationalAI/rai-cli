@@ -25,7 +25,7 @@ $RAI list-engines --state=PROVISIONED
 $RAI list-engines --state=NONSENSE
 
 # databases
-$RAI create-database $DATABASE --overwrite
+$RAI create-database $DATABASE
 $RAI get-database $DATABASE
 $RAI list-databases
 $RAI list-databases --state=CREATED
@@ -63,10 +63,11 @@ $RAI exec $DATABASE -e $ENGINE -c sample_json
 $RAI list-edbs -e $DATABASE $ENGINE
 
 # clone database
-$RAI create-database $DATABASE -e $ENGINE --overwrite
+$RAI delete-database $DATABASE
+$RAI create-database $DATABASE
 $RAI load-json $DATABASE -e $ENGINE sample.json -r sample_json
 $RAI load-model $DATABASE -e $ENGINE hello.rel
-$RAI clone-database $DATABASECLONE -e $ENGINE $DATABASE --overwrite
+$RAI clone-database $DATABASECLONE $DATABASE
 $RAI list-databases
 $RAI get-database $DATABASECLONE
 $RAI list-edbs $DATABASECLONE -e $ENGINE
