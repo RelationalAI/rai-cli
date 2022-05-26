@@ -96,9 +96,17 @@ func addCommands(root *cobra.Command) {
 
 	cmd = &cobra.Command{
 		Use:   "get-model database model",
-		Short: "Get the source text for the given model",
+		Short: "Get details for the given model",
 		Args:  cobra.ExactArgs(2),
 		Run:   getModel}
+	cmd.Flags().StringP("engine", "e", "", "default engine")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "get-model-source database model",
+		Short: "Get the source text for the given model",
+		Args:  cobra.ExactArgs(2),
+		Run:   getModelSource}
 	cmd.Flags().StringP("engine", "e", "", "default engine")
 	root.AddCommand(cmd)
 

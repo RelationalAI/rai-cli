@@ -44,6 +44,7 @@ $RAI load-model $DATABASE -e $ENGINE hello.rel
 $RAI list-model-names $DATABASE -e $ENGINE
 $RAI list-models $DATABASE -e $ENGINE
 $RAI get-model $DATABASE -e $ENGINE hello
+$RAI get-model-source $DATABASE -e $ENGINE hello
 $RAI list-edbs $DATABASE -e $ENGINE
 
 # load-csv

@@ -443,6 +443,20 @@ func getModel(cmd *cobra.Command, args []string) {
 	action.Exit(rsp, err)
 }
 
+func getModelSource(cmd *cobra.Command, args []string) {
+	// assert len(args) == 2
+	database := args[0]
+	model := args[1]
+	action := newAction(cmd)
+	engine := action.getString("engine")
+	if engine == "" {
+		engine = pickEngine(action)
+	}
+	action.Start("Get model source '%s' (%s/%s)", model, database, engine)
+	rsp, err := action.Client().GetModel(database, engine, model)
+	action.Exit(rsp.Value, err)
+}
+
 // Return the list of keys corresponding to the given map.
 func mapKeys(m map[string]io.Reader) []string {
 	i := 0
