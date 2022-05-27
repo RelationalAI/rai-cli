@@ -125,6 +125,7 @@ func addCommands(root *cobra.Command) {
 		Args:  cobra.MinimumNArgs(2),
 		Run:   loadModels}
 	cmd.Flags().StringP("engine", "e", "", "default engine")
+	cmd.Flags().StringP("prefix", "p", "", "namespace prefix")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{

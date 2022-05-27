@@ -522,9 +522,10 @@ func loadModels(cmd *cobra.Command, args []string) {
 	database := args[0]
 	action := newAction(cmd)
 	engine := action.getString("engine")
+	prefix := action.getString("prefix")
 	models := map[string]io.Reader{}
 	for _, arg := range args[1:] {
-		name := baseSansExt(arg)
+		name := filepath.Join(prefix, baseSansExt(arg))
 		r, err := os.Open(arg)
 		if err != nil {
 			fatal(err.Error())
