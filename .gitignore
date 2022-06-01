@@ -1,3 +1,4 @@
 *.out
 .vscode
 build/
+rai/__debug_bin

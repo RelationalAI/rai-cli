@@ -454,7 +454,10 @@ func getModelSource(cmd *cobra.Command, args []string) {
 	}
 	action.Start("Get model source '%s' (%s/%s)", model, database, engine)
 	rsp, err := action.Client().GetModel(database, engine, model)
-	action.Exit(rsp.Value, err)
+	if err != nil {
+		action.Exit(nil, err)
+	}
+	action.Exit(rsp.Value, nil)
 }
 
 // Return the list of keys corresponding to the given map.
