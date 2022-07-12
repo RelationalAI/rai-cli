@@ -293,7 +293,7 @@ func addCommands(root *cobra.Command) {
 }
 
 func main() {
-	var root = &cobra.Command{Use: "rai"}
+	var root = &cobra.Command{Use: "rai", Version: version}
 	// todo: additional root options
 	// --request-timeout
 	// --token : Bearer token for authenticating API request
