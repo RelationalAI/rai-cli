@@ -574,7 +574,7 @@ func execQuery(cmd *cobra.Command, args []string) {
 		engine = pickEngine(action)
 	}
 	action.Start("Executing query (%s/%s) readonly=%s", database, engine, strconv.FormatBool(readonly))
-	rsp, err := action.Client().ExecuteV1(database, engine, source, nil, readonly)
+	rsp, err := action.Client().Execute(database, engine, source, nil, readonly)
 	action.Exit(rsp, err)
 }
 
