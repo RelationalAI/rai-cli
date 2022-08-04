@@ -1,9 +1,9 @@
 # Changelog
 
 ## main
-
 * Add --prefix option to load-models
 * Add get-model-source command
+* Use models path as a default prefix (could be overwitten by --prefix flag)
 
 ## V0.1.1
 
