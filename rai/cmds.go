@@ -528,11 +528,16 @@ func loadModels(cmd *cobra.Command, args []string) {
 	prefix := action.getString("prefix")
 	models := map[string]io.Reader{}
 	for _, arg := range args[1:] {
+		if !(cmd.Flags().Lookup("prefix").Changed) {
+			prefix, _ = filepath.Split(arg)
+		}
+
 		name := filepath.Join(prefix, baseSansExt(arg))
 		r, err := os.Open(arg)
 		if err != nil {
 			fatal(err.Error())
 		}
+
 		models[name] = r
 	}
 	if engine == "" {
