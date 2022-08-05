@@ -1,10 +1,10 @@
 module rai
 
-go 1.17
+go 1.18
 
 require (
 	github.com/pkg/errors v0.9.1
-	github.com/relationalai/rai-sdk-go v0.2.0
+	github.com/relationalai/rai-sdk-go v0.2.2-0.20220805163355-6ac387bdecd3
 	github.com/spf13/cobra v1.5.0
 )
 
@@ -20,5 +20,6 @@ require (
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/tools v0.1.11 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/ini.v1 v1.66.6 // indirect
 )
