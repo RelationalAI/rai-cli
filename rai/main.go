@@ -201,6 +201,14 @@ func addCommands(root *cobra.Command) {
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
+		Use:   "list-edb-names database",
+		Short: "List the names of all EDBs in the given database",
+		Args:  cobra.ExactArgs(1),
+		Run:   listEdbNames}
+	cmd.Flags().StringP("engine", "e", "", "default engine")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
 		Use:   "load-csv database file",
 		Short: "Load a CSV file into the given database",
 		Args:  cobra.ExactArgs(2),

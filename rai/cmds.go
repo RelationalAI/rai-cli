@@ -26,6 +26,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -591,13 +592,39 @@ func listEdbs(cmd *cobra.Command, args []string) {
 	action.Exit(rsp, err)
 }
 
+func listEdbNames(cmd *cobra.Command, args []string) {
+	// assert len(args) == 1
+	action := newAction(cmd)
+	database := args[0]
+	engine := action.getString("engine")
+	if engine == "" {
+		engine = pickEngine(action)
+	}
+	action.Start("List EDB names '%s' (/%s)", database, engine)
+	rsp, err := action.Client().ListEDBs(database, engine)
+	if err != nil {
+		action.Exit(nil, err)
+	}
+	nameMap := map[string]bool{}
+	for i := 0; i < len(rsp); i++ {
+		edb := &rsp[i]
+		nameMap[edb.Name] = true
+	}
+	names := make([]string, 0, len(nameMap))
+	for name := range nameMap {
+		names = append(names, name)
+	}
+	names = sort.StringSlice(names)
+	action.Exit(names, nil)
+}
+
 // Parse the schema option string into the schema definition map that is
 // expected by the golang client.
 //
 // The schema definition consists of a sequence of semicolon delimited
 // <column>:<type> pairs that are parsed into a column => type map, eg:
 //
-//   --schema='cocktail:string;quantity:int;price:decimal(64,2);date:date'
+//	--schema='cocktail:string;quantity:int;price:decimal(64,2);date:date'
 func parseSchema(a *Action) map[string]string {
 	schema := a.getString("schema")
 	if schema == "" {
