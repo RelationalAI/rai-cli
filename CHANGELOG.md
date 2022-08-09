@@ -2,6 +2,7 @@
 
 ## main
 
+* Add list-edb-names command
 * Add --prefix option to load-models
 * Add get-model-source command
 
