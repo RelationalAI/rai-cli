@@ -127,3 +127,42 @@ func (tx *TransactionResult) Show() {
 		}
 	}
 }
+
+func zip(lists ...[]interface{}) func() []interface{} {
+	zip := make([]interface{}, len(lists))
+	i := 0
+	return func() []interface{} {
+		for j := range lists {
+			if i >= len(lists[j]) {
+				return nil
+			}
+			zip[j] = lists[j][i]
+		}
+		i++
+		return zip
+	}
+}
+
+func (tx *TransactionAsyncResult) ShowIO(io io.Writer) {
+	for _, r := range tx.Results {
+		k := r.RelationID
+		v := r.Table
+		fmt.Fprintf(io, "%s\n", k)
+		iter := zip(v...)
+		for tuple := iter(); tuple != nil; tuple = iter() {
+			for i, element := range tuple {
+				if i > 0 {
+					fmt.Fprint(io, ", ")
+				}
+
+				fmt.Fprintf(io, "%v", element)
+			}
+			fmt.Fprintln(io)
+		}
+		fmt.Fprintln(io)
+	}
+}
+
+func (tx *TransactionAsyncResult) Show() {
+	tx.ShowIO(os.Stdout)
+}
