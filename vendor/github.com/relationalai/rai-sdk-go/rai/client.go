@@ -349,12 +349,14 @@ func readArrowFiles(files []TransactionAsyncFile) ([]ArrowRelation, error) {
 			defer reader.Release()
 			for reader.Next() {
 				rec := reader.Record()
+				var columns [][]interface{}
 				for i := 0; i < int(rec.NumCols()); i++ {
 					data, _ := rec.Column(i).MarshalJSON()
-					var values []interface{}
-					json.Unmarshal(data, &values)
-					out = append(out, ArrowRelation{file.Name, values})
+					var column []interface{}
+					json.Unmarshal(data, &column)
+					columns = append(columns, column)
 				}
+				out = append(out, ArrowRelation{file.Name, columns})
 
 				rec.Retain()
 			}
