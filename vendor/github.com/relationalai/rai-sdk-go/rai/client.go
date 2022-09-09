@@ -283,7 +283,6 @@ func unmarshal(rsp *http.Response, result interface{}) error {
 	switch data.(type) {
 
 	case []byte: // Got back a JSON response
-
 		if dstValues.Type() == reflect.TypeOf(TransactionAsyncResult{}) {
 			// But the user asked for the whole TransactionResult struct,
 			// so we need to parse the JSON TransactionResponse, and fill it in
@@ -311,24 +310,30 @@ func unmarshal(rsp *http.Response, result interface{}) error {
 	case []TransactionAsyncFile: // Multipart response
 		if dstValues.Type() == reflect.TypeOf(TransactionAsyncResult{}) {
 			rsp, err := readTransactionAsyncFiles(data.([]TransactionAsyncFile))
+			if err != nil {
+				return err
+			}
 			rsp.GotCompleteResult = true
 			srcValues := reflect.ValueOf(*rsp)
 			dstValues.Set(srcValues)
-			return err
+			return nil
 		}
 
 		if dstValues.Type() == reflect.TypeOf([]ArrowRelation{}) {
 			rsp, err := readArrowFiles(data.([]TransactionAsyncFile))
+			if err != nil {
+				return err
+			}
 			srcValues := reflect.ValueOf(rsp)
 			dstValues.Set(srcValues)
-			return err
+			return nil
 		}
 
 		return errors.Errorf("unhandled unmarshal type %T", result)
 	case generated.MetadataInfo:
 		srcValues := reflect.ValueOf(data)
 		dstValues.Set(srcValues)
-		return err
+		return nil
 	default:
 		return errors.Errorf("unsupported result type %T", reflect.TypeOf(data))
 	}
@@ -512,10 +517,6 @@ func readTransactionAsyncFiles(files []TransactionAsyncFile) (*TransactionAsyncR
 
 	if txn == (TransactionAsyncResponse{ID: "", State: "", ReadOnly: false}) {
 		return nil, errors.Errorf("transaction part is missing")
-	}
-
-	if len(metadata.Relations) == 0 {
-		return nil, errors.Errorf("metadata.proto is empty")
 	}
 
 	if problems == nil {

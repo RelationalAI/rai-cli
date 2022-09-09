@@ -5,11 +5,11 @@ relations {
       constant_type {
         rel_type {
           tag: PRIMITIVE_TYPE
-          primitive_type: SYMBOL
+          primitive_type: STRING
         }
         value {
           arguments {
-            tag: SYMBOL
+            tag: STRING
             string_val: "output"
           }
         }
