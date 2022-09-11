@@ -148,6 +148,12 @@ func (tx *TransactionAsyncResult) ShowIO(io io.Writer) {
 		k := r.RelationID
 		v := r.Table
 		fmt.Fprintf(io, "%s\n", k)
+
+		if len(v) == 0 {
+			fmt.Fprintln(io, "()")
+			continue
+		}
+
 		iter := zip(v...)
 		for tuple := iter(); tuple != nil; tuple = iter() {
 			for i, element := range tuple {
