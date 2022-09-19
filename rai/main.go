@@ -270,7 +270,7 @@ func addCommands(root *cobra.Command) {
 
 	cmd = &cobra.Command{
 		Use:   "find-user email",
-		Short: "Find the with the given email address",
+		Short: "Find the user with the given email address",
 		Args:  cobra.ExactArgs(1),
 		Run:   findUser}
 	root.AddCommand(cmd)
