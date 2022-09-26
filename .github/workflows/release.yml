@@ -12,7 +12,11 @@ jobs:
       matrix:
         goos: [linux, darwin, windows]
         goarch: ["386", amd64]
-
+        exclude:
+          - goarch: "386"
+            goos: darwin
+          - goarch: arm64
+            goos: windows
     steps:
     - uses: actions/checkout@v3
     - uses: wangyoucao577/go-release-action@v1.32
