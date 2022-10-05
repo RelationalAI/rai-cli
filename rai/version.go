@@ -15,4 +15,6 @@
 package main
 
 // Represents the current rai's CLI version
+// May be overwritten at link time using ldflags (linker flags):
+//     -ldflags="-X 'main.version=0.1.2-alpha'"
 var version = "0.1.1-alpha"
