@@ -150,7 +150,7 @@ func addCommands(root *cobra.Command) {
 		Short: "Create an OAuth client",
 		Args:  cobra.ExactArgs(1),
 		Run:   createOAuthClient}
-	cmd.Flags().String("perms", "", "permissionss")
+	cmd.Flags().StringArray("perms", nil, "permissions")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
