@@ -36,7 +36,7 @@ func addCommands(root *cobra.Command) {
 
 	cmd = &cobra.Command{
 		Use:   "delete-database database",
-		Short: "Delete a database databaase",
+		Short: "Delete a database",
 		Args:  cobra.ExactArgs(1),
 		Run:   deleteDatabase}
 	root.AddCommand(cmd)
