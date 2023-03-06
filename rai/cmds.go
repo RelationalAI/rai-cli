@@ -717,7 +717,7 @@ func createUser(cmd *cobra.Command, args []string) {
 	// assert len(args) == 1
 	action := newAction(cmd)
 	email := args[0]
-	roles := action.getStringArray("roles")
+	roles := action.getStringArray("role")
 	action.Start("Create user '%s' roles=%s", email, strings.Join(roles, ","))
 	rsp, err := action.Client().CreateUser(email, roles)
 	action.Exit(rsp, err)
