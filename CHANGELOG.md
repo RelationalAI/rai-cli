@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.3
+
+* Fix create-user role argument
+
 ## v0.1.2
 
 * Add list-edb-names command
