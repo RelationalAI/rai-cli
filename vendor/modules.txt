@@ -49,10 +49,13 @@ github.com/pierrec/lz4/v4/internal/xxh32
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# github.com/relationalai/rai-sdk-go v0.3.1-alpha
-## explicit; go 1.17
-github.com/relationalai/rai-sdk-go/protos/generated
+# github.com/relationalai/rai-sdk-go v0.3.1-alpha => /Users/llovering/rai/rai-sdk-go
+## explicit; go 1.18
 github.com/relationalai/rai-sdk-go/rai
+github.com/relationalai/rai-sdk-go/rai/pb
+# github.com/shopspring/decimal v1.3.1
+## explicit; go 1.13
+github.com/shopspring/decimal
 # github.com/spf13/cobra v1.5.0
 ## explicit; go 1.15
 github.com/spf13/cobra
@@ -114,3 +117,4 @@ google.golang.org/protobuf/runtime/protoimpl
 # gopkg.in/ini.v1 v1.66.6
 ## explicit
 gopkg.in/ini.v1
+# github.com/relationalai/rai-sdk-go => /Users/llovering/rai/rai-sdk-go

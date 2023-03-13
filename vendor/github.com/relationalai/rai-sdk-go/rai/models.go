@@ -1,4 +1,4 @@
-// Copyright 2022 RelationalAI, Inc.
+// Copyright 2022-2023 RelationalAI, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,9 @@ package rai
 import (
 	"time"
 
-	"github.com/relationalai/rai-sdk-go/protos/generated"
+	"github.com/apache/arrow/go/v7/arrow"
+	"github.com/relationalai/rai-sdk-go/rai/pb"
 )
-
-// REST API v1
 
 //
 // Resources
@@ -85,10 +84,36 @@ type User struct {
 }
 
 //
-// Transaction results
+// Transaction v1 (deprecated)
 //
 
-type ClientProblem struct {
+type DbAction map[string]interface{}
+
+// The transaction "request" envelope
+type TransactionV1 struct {
+	Region        string
+	Database      string
+	Engine        string
+	Mode          string
+	Source        string
+	Abort         bool
+	Readonly      bool
+	NoWaitDurable bool
+	Version       int
+}
+
+type IntegrityConstraintViolation struct {
+	Type    string   `json:"type"`
+	Sources []Source `json:"sources"`
+}
+
+type Source struct {
+	RelKey RelKey `json:"rel_key"`
+	Source string `json:"source"`
+	Type   string `json:"type"`
+}
+
+type ProblemV1 struct {
 	Type        string `json:"type"`
 	ErrorCode   string `json:"error_code"`
 	IsError     bool   `json:"is_error"`
@@ -103,15 +128,80 @@ type RelKey struct {
 	Values []string `json:"values"`
 }
 
-type Relation struct {
+type RelationV1 struct {
 	RelKey  RelKey          `json:"rel_key"`
 	Columns [][]interface{} `json:"columns"`
 }
 
 type TransactionResult struct {
-	Aborted  bool            `json:"aborted"`
-	Output   []Relation      `json:"output"`
-	Problems []ClientProblem `json:"problems"`
+	Aborted  bool         `json:"aborted"`
+	Output   []RelationV1 `json:"output"`
+	Problems []ProblemV1  `json:"problems"`
+}
+
+//
+// Transaction
+//
+
+type TransactionState string
+
+const (
+	Created   TransactionState = "CREATED" // Created, queued for execution
+	Running   TransactionState = "RUNNING"
+	Completed TransactionState = "COMPLETED"
+	Aborted   TransactionState = "ABORTED"
+)
+
+type Transaction struct {
+	ID                    string           `json:"id"`
+	AccountName           string           `json:"account_name,omitempty"`
+	Database              string           `json:"database_name,omitempty"`
+	Query                 string           `json:"query,omitempty"`
+	State                 TransactionState `json:"state"`
+	ReadOnly              bool             `json:"read_only,omitempty"`
+	CreatedBy             string           `json:"created_by,omitempty"`
+	CreatedOn             int64            `json:"created_on,omitempty"`
+	FinishedAt            int64            `json:"finished_at,omitempty"`
+	LastRequestedInterval int64            `json:"last_requested_interval,omitempty"`
+}
+
+type TransactionRequest struct {
+	Database string   `json:"dbname"`
+	Engine   string   `json:"engine_name"`
+	Query    string   `json:"query"`
+	ReadOnly bool     `json:"readonly"`
+	Inputs   []any    `json:"v1_inputs"`
+	Tags     []string `json:"tags"`
+}
+
+type Problem struct {
+	Type        string `json:"type"`
+	ErrorCode   string `json:"error_code"`
+	Message     string `json:"message"`
+	Report      string `json:"report"`
+	Path        string `json:"path"` // ?
+	IsError     bool   `json:"is_error"`
+	IsException bool   `json:"is_exception"`
+}
+
+type Signature []any
+
+type TransactionMetadata struct {
+	Info   *pb.MetadataInfo     // protobuf metadata
+	sigMap map[string]Signature // id => metadata signature
+}
+
+type Partition struct {
+	record arrow.Record
+	cols   []Column
+}
+
+type TransactionResponse struct {
+	Transaction Transaction
+	Metadata    *TransactionMetadata
+	Partitions  map[string]*Partition
+	Problems    []Problem // todo: move to relational rep
+	relations   RelationCollection
 }
 
 //
@@ -246,63 +336,39 @@ type updateUserResponse struct {
 }
 
 //
-// Transaction async models
+// Integrations
 //
 
-type TransactionAsyncFile struct {
-	Name        string
-	Filename    string
-	ContentType string
-	Data        []byte
+type Integration struct {
+	ID         string `json:"id"`
+	Kind       string `json:"kind"`
+	Name       string `json:"name"`
+	Account    string `json:"account"`
+	CreatedBy  string `json:"createdBy"`
+	CreatedOn  string `json:"createdOn"`
+	State      string `json:"state"`
+	ConsentURL string `json:"consentUrl"`
+	Snowflake  struct {
+		Account string `json:"account"`
+	} `json:"snowflake"`
 }
 
-type ArrowRelation struct {
-	RelationID string
-	Table      [][]interface{}
+type SnowflakeCredentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
-type TransactionAsyncSingleResponse struct {
-	Transaction TransactionAsyncResponse `json:"transaction"`
+type createSnowflakeIntegrationRequest struct {
+	Name      string `json:"name"`
+	Snowflake struct {
+		Account string               `json:"account"` // snowflake account name
+		Admin   SnowflakeCredentials `json:"admin"`   // not-persisted
+		Proxy   SnowflakeCredentials `json:"proxy"`   // persisted
+	} `json:"snowflake"`
 }
 
-type TransactionAsyncMultipleResponses struct {
-	Transactions []TransactionAsyncResponse `json:"transactions"`
-}
-
-type TransactionAsyncResponse struct {
-	ID                    string `json:"id"`
-	State                 string `json:"state"`
-	AccountName           string `json:"account_name,omitempty"`
-	CreatedBy             string `json:"created_by,omitempty"`
-	CreatedOn             int64  `json:"created_on,omitempty"`
-	FinishedAt            int64  `json:"finished_at,omitempty"`
-	DatabaseName          string `json:"database_name,omitempty"`
-	ReadOnly              bool   `json:"read_only,omitempty"`
-	UserAgent             string `json:"user_agent,omitempty"`
-	Query                 string `json:"query,omitempty"`
-	LastRequestedInterval int64  `json:"last_requested_interval,omitempty"`
-}
-
-type TransactionAsyncCancelResponse struct {
-	Message string `json:"message"`
-}
-
-type IntegrityConstraintViolation struct {
-	Type    string   `json:"type"`
-	Sources []Source `json:"sources"`
-}
-
-type Source struct {
-	RelKey RelKey `json:"rel_key"`
-	Source string `json:"source"`
-	Type   string `json:"type"`
-}
-
-type TransactionAsyncResult struct {
-	// If !GotCompleteResult, keep polling until Transaction reaches terminal State.
-	GotCompleteResult bool
-	Transaction       TransactionAsyncResponse
-	Results           []ArrowRelation
-	Metadata          generated.MetadataInfo
-	Problems          []interface{}
+type deleteIntegrationRequest struct {
+	Snowflake struct {
+		Admin SnowflakeCredentials `json:"admin"` // not-persisted
+	} `json:"snowflake"`
 }

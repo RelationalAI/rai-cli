@@ -15,7 +15,6 @@
 package rai
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -25,24 +24,26 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
-	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/apache/arrow/go/v7/arrow/ipc"
 	"github.com/pkg/errors"
-	"github.com/relationalai/rai-sdk-go/protos/generated"
+	"github.com/relationalai/rai-sdk-go/rai/pb"
 	"google.golang.org/protobuf/proto"
 )
 
 const userAgent = "raictl/" + Version
 
+type PreRequestHook func(*http.Request) *http.Request
+
 type ClientOptions struct {
 	Config
 	HTTPClient         *http.Client
 	AccessTokenHandler AccessTokenHandler
+	PreRequestHook     PreRequestHook
 }
 
 func NewClientOptions(cfg *Config) *ClientOptions {
@@ -55,9 +56,9 @@ type Client struct {
 	Scheme             string
 	Host               string
 	Port               string
-	http               *http.Client
-	accessToken        string
+	HttpClient         *http.Client
 	accessTokenHandler AccessTokenHandler
+	preRequestHook     PreRequestHook
 }
 
 const DefaultHost = "azure.relationalai.com"
@@ -89,12 +90,13 @@ func NewClient(ctx context.Context, opts *ClientOptions) *Client {
 		opts.HTTPClient = &http.Client{}
 	}
 	client := &Client{
-		ctx:    ctx,
-		Region: region,
-		Scheme: scheme,
-		Host:   host,
-		Port:   port,
-		http:   opts.HTTPClient}
+		ctx:            ctx,
+		Region:         region,
+		Scheme:         scheme,
+		Host:           host,
+		Port:           port,
+		preRequestHook: opts.PreRequestHook,
+		HttpClient:     opts.HTTPClient}
 	if opts.AccessTokenHandler != nil {
 		client.accessTokenHandler = opts.AccessTokenHandler
 	} else if opts.Credentials == nil {
@@ -148,6 +150,7 @@ func (c *Client) Url(path string) string {
 	return fmt.Sprintf("%s://%s:%s%s", c.Scheme, c.Host, c.Port, path)
 }
 
+/* #nosec */
 const getAccessTokenBody = `{
 	"client_id": "%s",
 	"client_secret": "%s",
@@ -170,7 +173,7 @@ func (c *Client) GetAccessToken(creds *ClientCredentials) (*AccessToken, error) 
 	}
 	req = req.WithContext(c.ctx)
 	c.ensureHeaders(req, nil)
-	rsp, err := c.http.Do(req)
+	rsp, err := c.HttpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -241,23 +244,6 @@ func (c *Client) Put(path string, args url.Values, data, result interface{}) err
 	return c.request(http.MethodPut, path, nil, args, data, result)
 }
 
-// Show the given value as JSON data.
-func showJSON(v interface{}) {
-	e := json.NewEncoder(os.Stdout)
-	e.SetIndent("", "  ")
-	e.Encode(v)
-}
-
-func showRequest(req *http.Request, data interface{}) {
-	fmt.Printf("%s %s\n", req.Method, req.URL.String())
-	for k := range req.Header {
-		fmt.Printf("%s: %s\n", k, req.Header.Get(k))
-	}
-	if data != nil {
-		showJSON(data)
-	}
-}
-
 // Marshal the given item as a JSON string and return an io.Reader.
 func marshal(item interface{}) (io.Reader, error) {
 	if item == nil {
@@ -272,195 +258,21 @@ func marshal(item interface{}) (io.Reader, error) {
 
 // Unmarshal the JSON object from the given response body.
 func unmarshal(rsp *http.Response, result interface{}) error {
-	data, err := parseHttpResponse(rsp)
-
-	if err != nil {
+	if result == nil {
 		return nil
 	}
-
-	dstValues := reflect.ValueOf(result).Elem()
-
-	switch data.(type) {
-
-	case []byte: // Got back a JSON response
-		if dstValues.Type() == reflect.TypeOf(TransactionAsyncResult{}) {
-			// But the user asked for the whole TransactionResult struct,
-			// so we need to parse the JSON TransactionResponse, and fill it in
-			// the TransactionResult.
-			var txnResult TransactionAsyncResult
-			err := json.Unmarshal(data.([]byte), &txnResult.Transaction)
-			if err != nil {
-				return err
-			}
-			txnResult.GotCompleteResult = false
-
-			// Set it into result
-			srcValues := reflect.ValueOf(txnResult)
-
-			dstValues.Set(srcValues)
-			return err
-		}
-
-		// If they asked for just a regular JSON object, unmarshal it.
-		err := json.Unmarshal(data.([]byte), &result)
-		if err != nil {
-			return err
-		}
-
-	case []TransactionAsyncFile: // Multipart response
-		if dstValues.Type() == reflect.TypeOf(TransactionAsyncResult{}) {
-			rsp, err := readTransactionAsyncFiles(data.([]TransactionAsyncFile))
-			if err != nil {
-				return err
-			}
-			rsp.GotCompleteResult = true
-			srcValues := reflect.ValueOf(*rsp)
-			dstValues.Set(srcValues)
-			return nil
-		}
-
-		if dstValues.Type() == reflect.TypeOf([]ArrowRelation{}) {
-			rsp, err := readArrowFiles(data.([]TransactionAsyncFile))
-			if err != nil {
-				return err
-			}
-			srcValues := reflect.ValueOf(rsp)
-			dstValues.Set(srcValues)
-			return nil
-		}
-
-		return errors.Errorf("unhandled unmarshal type %T", result)
-	case generated.MetadataInfo:
-		srcValues := reflect.ValueOf(data)
-		dstValues.Set(srcValues)
-		return nil
-	default:
-		return errors.Errorf("unsupported result type %T", reflect.TypeOf(data))
-	}
-
-	return nil
-}
-
-// readArrowFiles read arrow files content and returns a list of ArrowRelations
-func readArrowFiles(files []TransactionAsyncFile) ([]ArrowRelation, error) {
-	var out []ArrowRelation
-	for _, file := range files {
-		if file.ContentType == "application/vnd.apache.arrow.stream" {
-			reader, err := ipc.NewReader(bytes.NewReader(file.Data))
-			if err != nil {
-				return out, err
-			}
-
-			defer reader.Release()
-			for reader.Next() {
-				rec := reader.Record()
-				var columns [][]interface{}
-				for i := 0; i < int(rec.NumCols()); i++ {
-					data, _ := rec.Column(i).MarshalJSON()
-					var column []interface{}
-					json.Unmarshal(data, &column)
-					columns = append(columns, column)
-				}
-				out = append(out, ArrowRelation{file.Name, columns})
-
-				rec.Retain()
-			}
-		}
-	}
-
-	return out, nil
-}
-
-// readProblemResults unmarshall the given string into list of ClientProblem and IntegrityConstraintViolation
-func readProblemResults(rsp []byte) ([]interface{}, error) {
-	out := make([]interface{}, 0)
-	var problems []interface{}
-	err := json.Unmarshal(rsp, &problems)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(problems) == 0 {
-		return out, nil
-	}
-
-	for _, p := range problems {
-		data, _ := json.Marshal(p)
-		var problem IntegrityConstraintViolation
-		err = json.Unmarshal(data, &problem)
-		if err != nil {
-			return out, err
-		}
-
-		if problem.Type == "IntegrityConstraintViolation" {
-			out = append(out, problem)
-		} else if problem.Type == "ClientProblem" {
-			var problem ClientProblem
-			err = json.Unmarshal(data, &problem)
-			if err != nil {
-				return out, err
-			}
-
-			out = append(out, problem)
-		} else {
-			return out, errors.Errorf("unknow error type: %s", problem.Type)
-		}
-	}
-
-	return out, nil
-}
-
-// parseMultipartResponse parses multipart response
-func parseMultipartResponse(data []byte, boundary string) ([]TransactionAsyncFile, error) {
-	var out []TransactionAsyncFile
-	mr := multipart.NewReader(bytes.NewReader(data), boundary)
-	for {
-		part, err := mr.NextPart()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, err
-		}
-
-		name := part.FormName()
-		filename := part.FileName()
-		contentType := part.Header.Get("Content-Type")
-		data, _ := ioutil.ReadAll(part)
-		txnFile := TransactionAsyncFile{Name: name, Filename: filename, ContentType: contentType, Data: data}
-		out = append(out, txnFile)
-	}
-
-	return out, nil
-}
-
-// parseHttpResponse parses the response body from the given http.Response
-func parseHttpResponse(rsp *http.Response) (interface{}, error) {
 	data, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(data) == 0 {
-		return nil, nil
+		return nil
 	}
-
-	mediaType, params, _ := mime.ParseMediaType(rsp.Header.Get("Content-Type"))
-
-	if mediaType == "application/json" {
-		return data, nil
-	} else if mediaType == "multipart/form-data" {
-		boundary := params["boundary"]
-		return parseMultipartResponse(data, boundary)
-	} else if mediaType == "application/x-protobuf" {
-		var metadataInfo generated.MetadataInfo
-		err := proto.Unmarshal(data, &metadataInfo)
-		if err != nil {
-			return nil, err
-		}
-
-		return metadataInfo, nil
-	} else {
-		return nil, errors.Errorf("unsupported Media-Type: %s", mediaType)
+	err = json.Unmarshal(data, result)
+	if err != nil {
+		return err
 	}
+	return nil
 }
 
 // Construct request, execute and unmarshal response.
@@ -479,56 +291,17 @@ func (c *Client) request(
 	if err := c.authenticate(req); err != nil {
 		return err
 	}
-	//showRequest(req, data)
 	rsp, err := c.Do(req)
 	if err != nil {
 		return err
 	}
+	switch out := result.(type) {
+	case **http.Response:
+		*out = rsp // caller will handle response
+		return nil
+	}
 	defer rsp.Body.Close()
-
 	return unmarshal(rsp, result)
-}
-
-// readTransactionAsyncFiles reads the transaction async results from TransactionAsyncFiles
-func readTransactionAsyncFiles(files []TransactionAsyncFile) (*TransactionAsyncResult, error) {
-	var txn TransactionAsyncResponse
-	var metadata generated.MetadataInfo
-	var problems []interface{}
-
-	for _, file := range files {
-		if file.Name == "transaction" {
-			err := json.Unmarshal(file.Data, &txn)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if file.Name == "metadata.proto" {
-			err := proto.Unmarshal(file.Data, &metadata)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if file.Name == "problems" {
-			problems, _ = readProblemResults(file.Data)
-		}
-	}
-
-	if txn == (TransactionAsyncResponse{ID: "", State: "", ReadOnly: false}) {
-		return nil, errors.Errorf("transaction part is missing")
-	}
-
-	if problems == nil {
-		return nil, errors.Errorf("problems part is missing")
-	}
-
-	results, err := readArrowFiles(files)
-	if err != nil {
-		return nil, err
-	}
-
-	return &TransactionAsyncResult{true, txn, results, metadata, problems}, nil
 }
 
 type HTTPError struct {
@@ -568,7 +341,10 @@ func isErrorStatus(rsp *http.Response) bool {
 // Execute the given request and return the response or error.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	req = req.WithContext(c.ctx)
-	rsp, err := c.http.Do(req)
+	if c.preRequestHook != nil {
+		req = c.preRequestHook(req)
+	}
+	rsp, err := c.HttpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -586,6 +362,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 const (
 	PathDatabase     = "/database"
 	PathEngine       = "/compute"
+	PathIntegrations = "/integration/v1alpha1/integrations"
 	PathOAuthClients = "/oauth-clients"
 	PathTransaction  = "/transaction"
 	PathTransactions = "/transactions"
@@ -847,7 +624,7 @@ func (c *Client) DeleteOAuthClient(id string) (*DeleteOAuthClientResponse, error
 	return &result, nil
 }
 
-// Returns the OAuth client with the given name or nil if it does not exist.
+// Returns the OAuth client with the given name or ErrNotFound if it does not exist.
 func (c *Client) FindOAuthClient(name string) (*OAuthClient, error) {
 	clients, err := c.ListOAuthClients()
 	if err != nil {
@@ -858,7 +635,7 @@ func (c *Client) FindOAuthClient(name string) (*OAuthClient, error) {
 			return &client, nil
 		}
 	}
-	return nil, nil
+	return nil, ErrNotFound
 }
 
 func (c *Client) GetOAuthClient(id string) (*OAuthClientExtra, error) {
@@ -893,7 +670,7 @@ func (c *Client) DeleteModels(
 	database, engine string, models []string,
 ) (*TransactionResult, error) {
 	var result TransactionResult
-	tx := Transaction{
+	tx := TransactionV1{
 		Region:   c.Region,
 		Database: database,
 		Engine:   engine,
@@ -934,7 +711,7 @@ func (c *Client) LoadModels(
 	database, engine string, models map[string]io.Reader,
 ) (*TransactionResult, error) {
 	var result TransactionResult
-	tx := Transaction{
+	tx := TransactionV1{
 		Region:   c.Region,
 		Database: database,
 		Engine:   engine,
@@ -990,26 +767,11 @@ func (c *Client) ListModels(database, engine string) ([]Model, error) {
 }
 
 //
-// Transactions
+// Transactions v1 (deprecated)
 //
 
-type DbAction map[string]interface{}
-
-// The transaction "request" envelope
-type Transaction struct {
-	Region        string
-	Database      string
-	Engine        string
-	Mode          string
-	Source        string
-	Abort         bool
-	Readonly      bool
-	NoWaitDurable bool
-	Version       int
-}
-
-func NewTransaction(region, database, engine, mode string) *Transaction {
-	return &Transaction{
+func NewTransaction(region, database, engine, mode string) *TransactionV1 {
+	return &TransactionV1{
 		Region:   region,
 		Database: database,
 		Engine:   engine,
@@ -1017,7 +779,7 @@ func NewTransaction(region, database, engine, mode string) *Transaction {
 }
 
 // Constructs a transaction request payload.
-func (tx *Transaction) Payload(actions ...DbAction) map[string]interface{} {
+func (tx *TransactionV1) Payload(actions ...DbAction) map[string]interface{} {
 	data := map[string]interface{}{
 		"type":           "Transaction",
 		"abort":          tx.Abort,
@@ -1040,7 +802,7 @@ func (tx *Transaction) Payload(actions ...DbAction) map[string]interface{} {
 	return data
 }
 
-func (tx *Transaction) QueryArgs() url.Values {
+func (tx *TransactionV1) QueryArgs() url.Values {
 	result := url.Values{}
 	result.Add("dbname", tx.Database)
 	result.Add("compute_name", tx.Engine)
@@ -1049,46 +811,6 @@ func (tx *Transaction) QueryArgs() url.Values {
 	if tx.Source != "" {
 		result.Add("source_dbname", tx.Source)
 	}
-	return result
-}
-
-// TransactionAsync is the envelope for an async transaction
-type TransactionAsync struct {
-	Database string
-	Engine   string
-	Source   string
-	Readonly bool
-}
-
-func NewTransactionAsync(database, engine string) *TransactionAsync {
-	return &TransactionAsync{
-		Database: database,
-		Engine:   engine}
-}
-
-// payload constructs the transaction async request payload.
-func (tx *TransactionAsync) payload(inputs map[string]string) map[string]interface{} {
-	var queryActionInputs = make([]interface{}, 0)
-	for k, v := range inputs {
-		queryActionInput, _ := makeQueryActionInput(k, v)
-		queryActionInputs = append(queryActionInputs, queryActionInput)
-	}
-
-	data := map[string]interface{}{
-		"dbname":      tx.Database,
-		"readonly":    tx.Readonly,
-		"engine_name": tx.Engine,
-		"query":       tx.Source,
-		"v1_inputs":   queryActionInputs,
-	}
-	return data
-}
-
-func (tx *TransactionAsync) QueryArgs() url.Values {
-	result := url.Values{}
-	result.Add("dbname", tx.Database)
-	result.Add("engine_name", tx.Engine)
-
 	return result
 }
 
@@ -1103,25 +825,6 @@ func makeActions(actions ...DbAction) []DbAction {
 		result = append(result, item)
 	}
 	return result
-}
-
-// Returns the database open_mode based on the given source and overwrite args.
-func createMode(source string, overwrite bool) string {
-	var mode string
-	if source != "" {
-		if overwrite {
-			mode = "CLONE_OVERWRITE"
-		} else {
-			mode = "CLONE"
-		}
-	} else {
-		if overwrite {
-			mode = "CREATE_OVERWRITE"
-		} else {
-			mode = "CREATE"
-		}
-	}
-	return mode
 }
 
 func makeRelKey(name, key string) map[string]interface{} {
@@ -1197,14 +900,14 @@ func makeQueryActionInput(name, value string) (map[string]interface{}, error) {
 	return result, nil
 }
 
-// Execute the given query, with the given optional query inputs.
+// Deprecated: use `Execute`
 func (c *Client) ExecuteV1(
 	database, engine, source string,
 	inputs map[string]string,
 	readonly bool,
 ) (*TransactionResult, error) {
 	var result TransactionResult
-	tx := Transaction{
+	tx := TransactionV1{
 		Region:   c.Region,
 		Database: database,
 		Engine:   engine,
@@ -1222,121 +925,460 @@ func (c *Client) ExecuteV1(
 	return &result, nil
 }
 
-func (c *Client) ExecuteAsync(
-	database, engine, source string,
-	inputs map[string]string,
-	readonly bool,
-) (*TransactionAsyncResult, error) {
-	tx := TransactionAsync{
-		Database: database,
-		Engine:   engine,
-		Source:   source,
-		Readonly: readonly,
+//
+// Transactions
+//
+
+// Answers if the given transaction is in a terminal state.
+func isTransactionComplete(tx *Transaction) bool {
+	switch tx.State {
+	case Completed, Aborted:
+		return true
 	}
-	txnResult := &TransactionAsyncResult{}
-	data := tx.payload(inputs)
-	err := c.Post(PathTransactions, tx.QueryArgs(), data, txnResult)
-	return txnResult, err
+	return false
 }
 
+const twoMinutes = 2 * time.Minute
+
+// todo: consider making the polling coefficients part of tx options
 func (c *Client) Execute(
 	database, engine, source string,
-	inputs map[string]string,
-	readonly bool,
-) (*TransactionAsyncResult, error) {
-	rsp, err := c.ExecuteAsync(database, engine, source, inputs, readonly)
+	inputs map[string]string, readonly bool,
+	tags ...string,
+) (*TransactionResponse, error) {
+	t0 := time.Now()
+	rsp, err := c.ExecuteAsync(database, engine, source, inputs, readonly, tags...)
 	if err != nil {
 		return nil, err
 	}
-
-	// Fast-path optimization
-	if rsp.GotCompleteResult {
-		return rsp, err
+	if isTransactionComplete(&rsp.Transaction) {
+		return rsp, nil // fast path
 	}
-
-	// Slow-path
-
 	id := rsp.Transaction.ID
-	count := 0
+	opts := GetTransactionOptions{true, true, true}
+	time.Sleep(500 * time.Millisecond)
 	for {
-		txn, err := c.GetTransaction(id)
+		rsp, err := c.GetTransaction(id, opts)
 		if err != nil {
-			count++
-		}
-
-		if count > 5 {
 			return nil, err
 		}
-
-		if txn.Transaction.State == "COMPLETED" || txn.Transaction.State == "ABORTED" {
-			break
+		if isTransactionComplete(&rsp.Transaction) {
+			return rsp, nil
 		}
+		delta := time.Since(t0)                  // total run time
+		pause := time.Duration(int64(delta) / 5) // 20% of total run time
+		if pause > twoMinutes {
+			pause = twoMinutes
+		}
+		time.Sleep(pause)
+	}
+}
 
-		time.Sleep(2 * time.Second)
+// Returns the results of a fast path response, which will contain data for
+// the transaction resource, problems, metadata and results in various parts
+// of the multipart response.
+func ReadTransactionResponse(rsp *http.Response) (*TransactionResponse, error) {
+	var result TransactionResponse
+
+	h := rsp.Header.Get("content-type")
+	ctype, params, err := mime.ParseMediaType(h)
+	if err != nil {
+		return nil, err
+	}
+	if ctype != "multipart/form-data" {
+		return nil, fmt.Errorf("bad content type: '%s'", ctype)
+	}
+	r := multipart.NewReader(rsp.Body, params["boundary"])
+	for {
+		part, err := r.NextPart()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+		switch part.FormName() {
+		case "metadata":
+			// ignore, deprecated
+
+		case "metadata.proto":
+			rsp, err := readTransactionMetadata(part)
+			if err != nil {
+				return nil, err
+			}
+			result.Metadata = rsp
+
+		case "problems":
+			rsp, err := readTransactionProblems(part)
+			if err != nil {
+				return nil, err
+			}
+			result.Problems = rsp
+
+		case "relation-count":
+			// ignore, this only exists to workaround a bug in some browsers
+			// that panic on a multi-part response with zero parts.
+
+		case "transaction":
+			if err = readJSON(part, &result.Transaction); err != nil {
+				return nil, err
+			}
+
+		default: // otherwise it's an errow encoded partition
+			id, rsp, err := readTransactionPartition(part)
+			if err != nil {
+				return nil, err
+			}
+			if result.Partitions == nil {
+				result.Partitions = map[string]*Partition{}
+			}
+			result.Partitions[id] = rsp
+		}
+	}
+	return &result, nil
+}
+
+func (c *Client) ExecuteAsync(
+	database, engine, query string,
+	inputs map[string]string, readonly bool,
+	tags ...string,
+) (*TransactionResponse, error) {
+	var inputList = make([]interface{}, 0)
+	for k, v := range inputs {
+		input, _ := makeQueryActionInput(k, v)
+		inputList = append(inputList, input)
+	}
+	tx := TransactionRequest{
+		Database: database,
+		Engine:   engine,
+		Query:    query,
+		ReadOnly: readonly,
+		Inputs:   inputList,
+		Tags:     tags}
+	var rsp *http.Response
+	err := c.request(http.MethodPost, PathTransactions, nil, nil, tx, &rsp)
+	if err != nil {
+		return nil, err
+	}
+	defer rsp.Body.Close()
+	if rsp.StatusCode == 200 {
+		return ReadTransactionResponse(rsp) // fast path
+	}
+	if rsp.StatusCode != 201 {
+		return nil, fmt.Errorf("unexpected status code '%d'", rsp.StatusCode)
+	}
+	var result TransactionResponse
+	err = readJSON(rsp.Body, &result.Transaction)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// If any of the following are true, `GetTransaction` will retrieve the
+// corresponding outputs, if available.
+type GetTransactionOptions struct {
+	Results  bool
+	Metadata bool
+	Problems bool
+}
+
+// Returns the transaction resource identified by `id` and any other outputs
+// selected in `opts`, if available.
+func (c *Client) GetTransaction(id string, opts ...GetTransactionOptions) (
+	*TransactionResponse, error,
+) {
+	var result TransactionResponse
+	rsp := struct{ Transaction *Transaction }{Transaction: &result.Transaction}
+	err := c.Get(makePath(PathTransactions, id), nil, nil, &rsp)
+	if err != nil {
+		return nil, err
+	}
+	if !isTransactionComplete(&result.Transaction) {
+		return &result, nil
 	}
 
-	txn, _ := c.GetTransaction(id)
-	results, _ := c.GetTransactionResults(id)
-	metadata, _ := c.GetTransactionMetadata(id)
-	problems, _ := c.GetTransactionProblems(id)
-
-	return &TransactionAsyncResult{true, txn.Transaction, results, metadata, problems}, nil
-}
-
-func (c *Client) GetTransactions() (*TransactionAsyncMultipleResponses, error) {
-	var result TransactionAsyncMultipleResponses
-	err := c.Get(makePath(PathTransactions), nil, nil, &result)
-
-	return &result, err
-}
-
-func (c *Client) GetTransaction(id string) (*TransactionAsyncSingleResponse, error) {
-	var result TransactionAsyncSingleResponse
-	err := c.Get(makePath(PathTransactions, id), nil, nil, &result)
-
-	return &result, err
-}
-
-func (c *Client) GetTransactionResults(id string) ([]ArrowRelation, error) {
-	var result []ArrowRelation
-	err := c.Get(makePath(PathTransactions, id, "results"), nil, nil, &result)
-
-	return result, err
-}
-
-func (c *Client) GetTransactionMetadata(id string) (generated.MetadataInfo, error) {
-	var result generated.MetadataInfo
-	headers := map[string]string{
-		"Accept": "application/x-protobuf",
+	var results, metadata, problems bool
+	for _, opt := range opts {
+		results = results || opt.Results
+		metadata = metadata || opt.Metadata
+		problems = problems || opt.Problems
 	}
-
-	err := c.Get(makePath(PathTransactions, id, "metadata"), headers, nil, &result)
-	return result, err
+	var wg sync.WaitGroup
+	var errR, errM, errP error
+	if results {
+		wg.Add(1)
+		go func() {
+			result.Partitions, errR = c.GetTransactionResults(id)
+			wg.Done()
+		}()
+	}
+	if metadata {
+		wg.Add(1)
+		go func() {
+			result.Metadata, errM = c.GetTransactionMetadata(id)
+			wg.Done()
+		}()
+	}
+	if problems {
+		wg.Add(1)
+		go func() {
+			result.Problems, errP = c.GetTransactionProblems(id)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	if results && errR != nil {
+		return nil, errR
+	}
+	if metadata && errM != nil {
+		return nil, errM
+	}
+	if problems && errP != nil {
+		return nil, errP
+	}
+	return &result, nil // todo
 }
 
-func (c *Client) GetTransactionProblems(id string) ([]interface{}, error) {
-	var result []interface{}
+func readJSON(r io.Reader, result interface{}) error {
+	return json.NewDecoder(r).Decode(result)
+}
+
+func readTransactionMetadata(r io.Reader) (*TransactionMetadata, error) {
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	var info pb.MetadataInfo
+	err = proto.Unmarshal(data, &info)
+	if err != nil {
+		return nil, err
+	}
+	return &TransactionMetadata{Info: &info, sigMap: asSignatureMap(&info)}, nil
+}
+
+func (c *Client) GetTransactionMetadata(id string) (
+	*TransactionMetadata, error,
+) {
+	var rsp *http.Response
+	headers := map[string]string{"Accept": "application/x-protobuf"}
+	err := c.Get(makePath(PathTransactions, id, "metadata"), headers, nil, &rsp)
+	if err != nil {
+		return nil, err
+	}
+	defer rsp.Body.Close()
+	return readTransactionMetadata(rsp.Body)
+}
+
+func readTransactionProblems(r io.Reader) ([]Problem, error) {
+	var result []Problem
+	if err := readJSON(r, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// todo: deprecated, should be loaded from partitions
+func (c *Client) GetTransactionProblems(id string) ([]Problem, error) {
+	var result []Problem
 	err := c.Get(makePath(PathTransactions, id, "problems"), nil, nil, &result)
 	if err != nil {
 		return nil, err
 	}
-
 	return result, nil
 }
 
-func (c *Client) CancelTransaction(id string) (*TransactionAsyncCancelResponse, error) {
-	var result TransactionAsyncCancelResponse
-	err := c.Post(makePath(PathTransactions, id, "cancel"), nil, nil, &result)
+// Read one partition from transactionr results.
+func readTransactionPartition(part *multipart.Part) (string, *Partition, error) {
+	h := part.Header.Get("content-type")
+	ctype, _, err := mime.ParseMediaType(h)
+	if err != nil {
+		return "", nil, err
+	}
+	if ctype != "application/vnd.apache.arrow.stream" {
+		return "", nil, fmt.Errorf("unknown content disposition '%s'", ctype)
+	}
+	r, err := ipc.NewReader(part)
+	if err != nil {
+		return "", nil, err
+	}
+	if r.Next() {
+		id := part.FileName()
+		record := r.Record()
+		record.Retain()
+		if r.Next() { // partitions are encoded in a single record
+			return "", nil, errors.New("unexpected record in partition")
+		}
+		return id, newPartition(record), nil
+	}
+	return "", nil, errors.New("no records for partition")
+}
+
+// Read the results of `GetTransactionResults` which will contain a list of
+// partitions in the parts of the multipart response.
+func readTransactionResults(rsp *http.Response) (map[string]*Partition, error) {
+	h := rsp.Header.Get("content-type")
+	ctype, params, err := mime.ParseMediaType(h)
+	if err != nil {
+		return nil, err
+	}
+	if ctype != "multipart/form-data" {
+		return nil, fmt.Errorf("bad content type: '%s'", ctype)
+	}
+
+	result := map[string]*Partition{}
+
+	r := multipart.NewReader(rsp.Body, params["boundary"])
+	for {
+		part, err := r.NextPart()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+		switch part.FormName() {
+		case "relation-count": // ignore
+		default:
+			id, p, err := readTransactionPartition(part)
+			if err != nil {
+				return nil, err
+			}
+			result[id] = p
+		}
+	}
+	return result, nil
+}
+
+func (c *Client) GetTransactionResults(id string) (map[string]*Partition, error) {
+	var rsp *http.Response
+	err := c.Get(makePath(PathTransactions, id, "results"), nil, nil, &rsp)
+	if err != nil {
+		return nil, err
+	}
+	defer rsp.Body.Close()
+	return readTransactionResults(rsp)
+}
+
+type listTransactionsResponse struct {
+	Transactions []Transaction `json:"transactions"`
+}
+
+func (c *Client) ListTransactions(tags ...string) ([]Transaction, error) {
+	args, err := queryArgs("tags", tags)
 	if err != nil {
 		return nil, err
 	}
 
-	return &result, nil
+	var result listTransactionsResponse
+	err = c.Get(makePath(PathTransactions), nil, args, &result)
+	return result.Transactions, err
 }
+
+type cancelTransactionResponse struct {
+	Message string `json:"message"`
+}
+
+func (c *Client) CancelTransaction(id string) (string, error) {
+	var result cancelTransactionResponse
+	if err := c.Post(makePath(PathTransactions, id, "cancel"), nil, nil, &result); err != nil {
+		return "", err
+	}
+	return result.Message, nil
+}
+
+// TransactionResponse
+
+func (t *TransactionResponse) EnsureMetadata(c *Client) (*TransactionMetadata, error) {
+	if t.Metadata == nil {
+		metadata, err := c.GetTransactionMetadata(t.Transaction.ID)
+		if err != nil {
+			return nil, err
+		}
+		t.Metadata = metadata
+	}
+	return t.Metadata, nil
+}
+
+func (t *TransactionResponse) EnsureProblems(c *Client) ([]Problem, error) {
+	if t.Problems == nil {
+		problems, err := c.GetTransactionProblems(t.Transaction.ID)
+		if err != nil {
+			return nil, err
+		}
+		t.Problems = problems
+	}
+	return t.Problems, nil
+}
+
+func (t *TransactionResponse) EnsureResults(c *Client) (map[string]*Partition, error) {
+	if t.Partitions == nil {
+		partitions, err := c.GetTransactionResults(t.Transaction.ID)
+		if err != nil {
+			return nil, err
+		}
+		t.Partitions = partitions
+	}
+	return t.Partitions, nil
+}
+
+func (t *TransactionResponse) Partition(id string) *Partition {
+	return t.Partitions[id]
+}
+
+func (t *TransactionResponse) Relation(id string) Relation {
+	return newBaseRelation(t.Partitions[id], t.Signature(id))
+}
+
+// Answers if the given signature prefix matches the given signature, where
+// the value "_" is a position wildcard.
+func matchSig(pre, sig Signature) bool {
+	if pre == nil {
+		return true
+	}
+	if len(pre) > len(sig) {
+		return false
+	}
+	for i, p := range pre {
+		if p == "_" {
+			continue
+		}
+		if p != sig[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// Returns a collection of relations whose signature matches any of the
+// optional prefix arguments, where value "_" in the prefix matches any value in the
+// corresponding signature position.
+func (t *TransactionResponse) Relations(args ...any) RelationCollection {
+	if t.Metadata == nil {
+		// cannot interpret partition data as without metadata
+		return RelationCollection{}
+	}
+	if t.relations == nil {
+		// construct collection of base relations
+		c := RelationCollection{}
+		for id, p := range t.Partitions {
+			c = append(c, newBaseRelation(p, t.Signature(id)))
+		}
+		t.relations = c
+	}
+	return t.relations.Select(args...)
+}
+
+// Returns the type signature corresponding to the given relation ID.
+func (t TransactionResponse) Signature(id string) Signature {
+	return t.Metadata.Signature(id)
+}
+
+// Transaction based operations
 
 func (c *Client) ListEDBs(database, engine string) ([]EDB, error) {
 	var result listEDBsResponse
-	tx := &Transaction{
+	tx := &TransactionV1{
 		Region:   c.Region,
 		Database: database,
 		Engine:   engine,
@@ -1399,7 +1441,7 @@ func genSchemaConfig(b *strings.Builder, opts *CSVOptions) {
 		return
 	}
 	schema := opts.Schema
-	if schema == nil || len(schema) == 0 {
+	if len(schema) == 0 {
 		return
 	}
 	count := 0
@@ -1573,4 +1615,44 @@ func (c *Client) UpdateUser(id string, req UpdateUserRequest) (*User, error) {
 		return nil, err
 	}
 	return &result.User, nil
+}
+
+//
+// Integrations
+//
+
+func (c *Client) CreateSnowflakeIntegration(
+	name, snowflakeAccount string, adminCreds, proxyCreds *SnowflakeCredentials,
+) (*Integration, error) {
+	var result Integration
+	req := createSnowflakeIntegrationRequest{Name: name}
+	req.Snowflake.Account = snowflakeAccount
+	req.Snowflake.Admin = *adminCreds
+	req.Snowflake.Proxy = *proxyCreds
+	if err := c.Post(PathIntegrations, nil, &req, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *Client) DeleteSnowflakeIntegration(name string, adminCreds *SnowflakeCredentials) error {
+	req := deleteIntegrationRequest{}
+	req.Snowflake.Admin = *adminCreds
+	return c.Delete(makePath(PathIntegrations, name), nil, &req, nil)
+}
+
+func (c *Client) GetSnowflakeIntegration(name string) (*Integration, error) {
+	var result Integration
+	if err := c.Get(makePath(PathIntegrations, name), nil, nil, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *Client) ListSnowflakeIntegrations() ([]Integration, error) {
+	var result []Integration
+	if err := c.Get(PathIntegrations, nil, nil, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }

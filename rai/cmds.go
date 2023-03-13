@@ -1,4 +1,4 @@
-// Copyright 2022 RelationalAI, Inc.
+// Copyright 2022-2023 RelationalAI, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -780,6 +780,55 @@ func updateUser(cmd *cobra.Command, args []string) {
 	req := rai.UpdateUserRequest{Status: status, Roles: roles}
 	action.Start("Update user '%s' status=%s", id, status)
 	rsp, err := action.Client().UpdateUser(id, req)
+	action.Exit(rsp, err)
+}
+
+//
+// Integrations
+//
+
+func createSnowflakeIntegration(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	name := args[0]
+	account := action.getString("account")
+	adminUsername := action.getString("admin-username")
+	adminPassword := action.getString("admin-password")
+	proxyUsername := action.getString("proxy-username")
+	proxyPassword := action.getString("proxy-password")
+	adminCreds := rai.SnowflakeCredentials{
+		Username: adminUsername, Password: adminPassword}
+	proxyCreds := rai.SnowflakeCredentials{
+		Username: proxyUsername, Password: proxyPassword}
+	action.Start("Create Snowflake integration '%s' account='%s'", name, account)
+	rsp, err := action.Client().CreateSnowflakeIntegration(
+		name, account, &adminCreds, &proxyCreds)
+	action.Exit(rsp, err)
+}
+
+func deleteSnowflakeIntegration(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	name := args[0]
+	adminUsername := action.getString("admin-username")
+	adminPassword := action.getString("admin-password")
+	adminCreds := rai.SnowflakeCredentials{
+		Username: adminUsername, Password: adminPassword}
+	action.Start("Delete Snowflake integration '%s'", name)
+	err := action.Client().DeleteSnowflakeIntegration(name, &adminCreds)
+	action.Exit(nil, err)
+}
+
+func getSnowflakeIntegration(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	name := args[0]
+	action.Start("Get Snowflake integration '%s'", name)
+	rsp, err := action.Client().GetSnowflakeIntegration(name)
+	action.Exit(rsp, err)
+}
+
+func listSnowflakeIntegrations(cmd *cobra.Command, _ []string) {
+	action := newAction(cmd)
+	action.Start("List Snowflake integrations")
+	rsp, err := action.Client().ListSnowflakeIntegrations()
 	action.Exit(rsp, err)
 }
 
