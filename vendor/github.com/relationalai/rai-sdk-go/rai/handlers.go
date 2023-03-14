@@ -14,13 +14,16 @@
 
 package rai
 
-// Implementation of the nop and client credentials token handlers.
+// Implementation of the nop and client credential token handlers.
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/user"
 	"path"
+
+	"github.com/pkg/errors"
 )
 
 type AccessTokenHandler interface {
@@ -49,8 +52,8 @@ type ClientCredentialsHandler struct {
 // tokens, as needed, and caches them locally in ~/.rai/tokens.json.
 func NewClientCredentialsHandler(
 	c *Client, creds *ClientCredentials,
-) ClientCredentialsHandler {
-	return ClientCredentialsHandler{client: c, creds: creds}
+) *ClientCredentialsHandler {
+	return &ClientCredentialsHandler{client: c, creds: creds}
 }
 
 // Returns the name of the token cache file.
@@ -112,11 +115,13 @@ func writeTokenCache(cache map[string]*AccessToken) {
 	if err != nil {
 		return
 	}
-	json.NewEncoder(f).Encode(cache)
+	if err := json.NewEncoder(f).Encode(cache); err != nil {
+		fmt.Println(errors.Wrapf(err, "failed to encode json"))
+	}
 	f.Close()
 }
 
-func (h ClientCredentialsHandler) GetAccessToken() (string, error) {
+func (h *ClientCredentialsHandler) GetAccessToken() (string, error) {
 	// 1. is it already loaded into the handler?
 	if h.accessToken != nil && !h.accessToken.IsExpired() {
 		return h.accessToken.Token, nil

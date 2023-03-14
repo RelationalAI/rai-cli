@@ -1,4 +1,4 @@
-// Copyright 2022 RelationalAI, Inc.
+// Copyright 2022-2023 RelationalAI, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ func addCommands(root *cobra.Command) {
 
 	cmd = &cobra.Command{
 		Use:   "delete-database database",
-		Short: "Delete a database databaase",
+		Short: "Delete a database",
 		Args:  cobra.ExactArgs(1),
 		Run:   deleteDatabase}
 	root.AddCommand(cmd)
@@ -290,8 +290,43 @@ func addCommands(root *cobra.Command) {
 	cmd.Flags().StringArray("role", nil, "user roles")
 	root.AddCommand(cmd)
 
-	// Misc
+	// Integrations
+	cmd = &cobra.Command{
+		Use:   "create-snowflake-integration name",
+		Short: "Create a Snowflake integration",
+		Args:  cobra.ExactArgs(1),
+		Run:   createSnowflakeIntegration}
+	cmd.Flags().String("account", "", "Snowflake account")
+	cmd.Flags().String("admin-username", "", "admin username")
+	cmd.Flags().String("admin-password", "", "admin password")
+	cmd.Flags().String("proxy-username", "", "proxy username")
+	cmd.Flags().String("proxy-password", "", "proxy password")
+	root.AddCommand(cmd)
 
+	cmd = &cobra.Command{
+		Use:   "delete-snowflake-integration name",
+		Short: "Delete a Snowflake integration",
+		Args:  cobra.ExactArgs(1),
+		Run:   deleteSnowflakeIntegration}
+	cmd.Flags().String("admin-username", "", "admin username")
+	cmd.Flags().String("admin-password", "", "admin password")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "get-snowflake-integration name",
+		Short: "Get information about the given Snowflake integration",
+		Args:  cobra.ExactArgs(1),
+		Run:   getSnowflakeIntegration}
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "list-snowflake-integrations",
+		Short: "List all Snowflake integrations",
+		Args:  cobra.ExactArgs(0),
+		Run:   listSnowflakeIntegrations}
+	root.AddCommand(cmd)
+
+	// Misc
 	cmd = &cobra.Command{
 		Use:   "get-access-token",
 		Short: "Get OAuth access token",

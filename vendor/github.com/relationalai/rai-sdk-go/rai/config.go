@@ -27,6 +27,7 @@ import (
 const DefaultConfigFile = "~/.rai/config"
 const DefaultConfigProfile = "default"
 
+/* #nosec */
 const defaultClientCredentialsUrl = "https://login.relationalai.com/oauth/token"
 
 type Config struct {
@@ -113,7 +114,9 @@ func LoadConfigString(source, profile string, cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	parseConfigStanza(stanza, cfg)
+	if err := parseConfigStanza(stanza, cfg); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -127,6 +130,8 @@ func LoadConfigFile(fname, profile string, cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	parseConfigStanza(stanza, cfg)
+	if err := parseConfigStanza(stanza, cfg); err != nil {
+		return err
+	}
 	return nil
 }
