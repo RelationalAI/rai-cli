@@ -4,11 +4,9 @@ go 1.18
 
 require (
 	github.com/pkg/errors v0.9.1
-	github.com/relationalai/rai-sdk-go v0.3.1-alpha
+	github.com/relationalai/rai-sdk-go v0.4.3-alpha
 	github.com/spf13/cobra v1.5.0
 )
-
-replace github.com/relationalai/rai-sdk-go => /Users/llovering/rai/rai-sdk-go
 
 require (
 	github.com/apache/arrow/go/v7 v7.0.1 // indirect
