@@ -290,17 +290,17 @@ func addCommands(root *cobra.Command) {
 	cmd.Flags().StringArray("role", nil, "user roles")
 	root.AddCommand(cmd)
 
-	// Integrations
+	// Snowflake integrations
 	cmd = &cobra.Command{
 		Use:   "create-snowflake-integration name",
 		Short: "Create a Snowflake integration",
 		Args:  cobra.ExactArgs(1),
 		Run:   createSnowflakeIntegration}
-	cmd.Flags().String("account", "", "Snowflake account")
-	cmd.Flags().String("admin-username", "", "admin username")
-	cmd.Flags().String("admin-password", "", "admin password")
-	cmd.Flags().String("proxy-username", "", "proxy username")
-	cmd.Flags().String("proxy-password", "", "proxy password")
+	cmd.Flags().String("account", "", "Snowflake account (default: SNOWSQL_ACCOUNT env var)")
+	cmd.Flags().String("admin-username", "", "Snowflake admin username (default: SNOWSQL_USER env var")
+	cmd.Flags().String("admin-password", "", "Snowflake admin password (default: SNOWSQL_PWD env var")
+	cmd.Flags().String("proxy-username", "", "Snowflake proxy username (default: SNOWSQL_USER env var")
+	cmd.Flags().String("proxy-password", "", "Snowflake proxy password (default: SNOWSQL_PWD env var)")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
@@ -308,8 +308,8 @@ func addCommands(root *cobra.Command) {
 		Short: "Delete a Snowflake integration",
 		Args:  cobra.ExactArgs(1),
 		Run:   deleteSnowflakeIntegration}
-	cmd.Flags().String("admin-username", "", "admin username")
-	cmd.Flags().String("admin-password", "", "admin password")
+	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER env var)")
+	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD env var")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
@@ -326,20 +326,57 @@ func addCommands(root *cobra.Command) {
 		Run:   listSnowflakeIntegrations}
 	root.AddCommand(cmd)
 
+	// Snowflake database links
+	cmd = &cobra.Command{
+		Use:   "create-snowflake-database-link integration",
+		Short: "Create a Snowflake database link",
+		Args:  cobra.ExactArgs(1),
+		Run:   createSnowflakeDatabaseLink}
+	cmd.Flags().String("database", "", "Snowflake database (default: SNOWSQL_DATABASE)")
+	cmd.Flags().String("schema", "", "Snowflake schema (default: SNOWSQL_SCHEMA)")
+	cmd.Flags().String("role", "", "Snowflake role (default: SNOWSQL_ROLE)")
+	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER)")
+	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD)")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "delete-snowflake-database-link integration",
+		Short: "Delete a Snowflake database link",
+		Args:  cobra.ExactArgs(1),
+		Run:   deleteSnowflakeDatabaseLink}
+	cmd.Flags().String("database", "", "Snowflake database (default: SNOWSQL_DATABASE env var)")
+	cmd.Flags().String("schema", "", "Snowflake schema (default: SNOWSQL_SCHEMA env var)")
+	cmd.Flags().String("role", "", "Snowflake role (default: SNOWSQL_ROLE env var)")
+	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER env var)")
+	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD env var)")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "get-snowflake-database-link integration",
+		Short: "Get information about the given Snowflake database link",
+		Args:  cobra.ExactArgs(1),
+		Run:   getSnowflakeDatabaseLink}
+	cmd.Flags().String("database", "", "Snowflake database (default: SNOWSQL_DATABASE env var)")
+	cmd.Flags().String("schema", "", "Snowflake schema (default: SNOWSQL_SCHEMA env var)")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "list-snowflake-database-links integration",
+		Short: "List Snowflake database links for the given integration",
+		Args:  cobra.ExactArgs(1),
+		Run:   listSnowflakeDatabaseLinks}
+	root.AddCommand(cmd)
+
 	// Misc
 	cmd = &cobra.Command{
 		Use:   "get-access-token",
 		Short: "Get OAuth access token",
 		Run:   getAccessToken}
 	root.AddCommand(cmd)
-
 }
 
 func main() {
 	var root = &cobra.Command{Use: "rai"}
-	// todo: additional root options
-	// --request-timeout
-	// --token : Bearer token for authenticating API request
 	root.PersistentFlags().String("host", "", "host name")
 	root.PersistentFlags().String("port", "", "port number")
 	root.PersistentFlags().String("config", "~/.rai/config", "config file")

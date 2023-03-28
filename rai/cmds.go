@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -82,16 +80,19 @@ func (a *Action) Context() context.Context {
 	return a.cmd.Context()
 }
 
+// Returns the bool value corresponding to the named flag.
 func (a *Action) getBool(name string) bool {
 	result, _ := a.cmd.Flags().GetBool(name)
 	return result
 }
 
+// Returns the int value corresponding to the named flag.
 func (a *Action) getInt(name string) int {
 	result, _ := a.cmd.Flags().GetInt(name)
 	return result
 }
 
+// Returns the rune value corresponding to the named flag.
 func (a *Action) getRune(name string) rune {
 	s, _ := a.cmd.Flags().GetString(name)
 	if s == "" {
@@ -100,11 +101,23 @@ func (a *Action) getRune(name string) rune {
 	return []rune(s)[0]
 }
 
+// Returns the string value corresponding to the named flag.
 func (a *Action) getString(name string) string {
 	result, _ := a.cmd.Flags().GetString(name)
 	return result
 }
 
+// Returns the string value corresponding to the named flag, and if no value
+// is set, return the value corresponding to the given environment variable.
+func (a *Action) getStringEnv(name, key string) string {
+	result, _ := a.cmd.Flags().GetString(name)
+	if result == "" {
+		result = os.Getenv(key)
+	}
+	return result
+}
+
+// Returns the string array value corresponding to the named flag.
 func (a *Action) getStringArray(name string) []string {
 	result, _ := a.cmd.Flags().GetStringArray(name)
 	return result
@@ -170,7 +183,6 @@ func (a *Action) showValue(v interface{}) {
 			}
 		case "json":
 			break // default
-
 		}
 		showJSON(v)
 	}
@@ -192,7 +204,7 @@ func (a *Action) Start(format string, args ...interface{}) *Action {
 	var msg string
 	msg = fmt.Sprintf(format, args...)
 	msg = fmt.Sprintf("%s .. ", msg)
-	fmt.Fprintf(os.Stderr, msg)
+	fmt.Fprintln(os.Stderr, msg)
 	return a
 }
 
@@ -210,6 +222,7 @@ func (a *Action) Exit(result interface{}, err error) {
 }
 
 // Pick a random PROVISIONED engine.
+/*
 func pickRandomEngine(action *Action) string {
 	rsp, err := action.Client().ListEngines("state", "PROVISIONED")
 	if err != nil {
@@ -224,6 +237,7 @@ func pickRandomEngine(action *Action) string {
 	ix := rand.Intn(len(rsp))
 	return rsp[ix].Name
 }
+*/
 
 // Pick the most recently created PROVISIONED engine.
 func pickLatestEngine(action *Action) string {
@@ -248,25 +262,6 @@ func pickLatestEngine(action *Action) string {
 // currently its too likely to pick an incompatible engine.
 func pickEngine(action *Action) string {
 	return pickLatestEngine(action)
-}
-
-// Answers if the given state represents a terminal state.
-func isTerminalState(state, targetState string) bool {
-	if state == targetState {
-		return true
-	}
-	if strings.Contains(state, "FAILED") {
-		return true
-	}
-	return false
-}
-
-func isStatusNotFound(err error) bool {
-	e, ok := err.(*rai.HTTPError)
-	if !ok {
-		return false
-	}
-	return e.StatusCode == http.StatusNotFound
 }
 
 //
@@ -614,7 +609,7 @@ func listEdbNames(cmd *cobra.Command, args []string) {
 	for name := range nameMap {
 		names = append(names, name)
 	}
-	names = sort.StringSlice(names)
+	sort.Strings(names)
 	action.Exit(names, nil)
 }
 
@@ -784,17 +779,17 @@ func updateUser(cmd *cobra.Command, args []string) {
 }
 
 //
-// Integrations
+// Snowflake integrations
 //
 
 func createSnowflakeIntegration(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	name := args[0]
-	account := action.getString("account")
-	adminUsername := action.getString("admin-username")
-	adminPassword := action.getString("admin-password")
-	proxyUsername := action.getString("proxy-username")
-	proxyPassword := action.getString("proxy-password")
+	account := action.getStringEnv("account", "SNOWSQL_ACCOUNT")
+	adminUsername := action.getStringEnv("admin-username", "SNOWSQL_USER")
+	adminPassword := action.getStringEnv("admin-password", "SNOWSQL_PWD")
+	proxyUsername := action.getStringEnv("proxy-username", "SNOWSQL_USER")
+	proxyPassword := action.getStringEnv("proxy-password", "SNOWSQL_PWD")
 	adminCreds := rai.SnowflakeCredentials{
 		Username: adminUsername, Password: adminPassword}
 	proxyCreds := rai.SnowflakeCredentials{
@@ -808,12 +803,11 @@ func createSnowflakeIntegration(cmd *cobra.Command, args []string) {
 func deleteSnowflakeIntegration(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	name := args[0]
-	adminUsername := action.getString("admin-username")
-	adminPassword := action.getString("admin-password")
-	adminCreds := rai.SnowflakeCredentials{
-		Username: adminUsername, Password: adminPassword}
+	username := action.getStringEnv("username", "SNOWSQL_USER")
+	password := action.getStringEnv("password", "SNOWSQL_PWD")
+	creds := rai.SnowflakeCredentials{Username: username, Password: password}
 	action.Start("Delete Snowflake integration '%s'", name)
-	err := action.Client().DeleteSnowflakeIntegration(name, &adminCreds)
+	err := action.Client().DeleteSnowflakeIntegration(name, &creds)
 	action.Exit(nil, err)
 }
 
@@ -829,6 +823,61 @@ func listSnowflakeIntegrations(cmd *cobra.Command, _ []string) {
 	action := newAction(cmd)
 	action.Start("List Snowflake integrations")
 	rsp, err := action.Client().ListSnowflakeIntegrations()
+	action.Exit(rsp, err)
+}
+
+//
+// Snowflake database links
+//
+
+func createSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	integration := args[0]
+	database := action.getStringEnv("database", "SNOWSQL_DATABASE")
+	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
+	role := action.getStringEnv("role", "SNOWSQL_ROLE")
+	username := action.getStringEnv("username", "SNOWSQL_USER")
+	password := action.getStringEnv("username", "SNOWSQL_PWD")
+	creds := rai.SnowflakeCredentials{Username: username, Password: password}
+	name := fmt.Sprintf("%s.%s", database, schema)
+	action.Start("Create Snowflake database link '%s' (%s)", name, integration)
+	rsp, err := action.Client().CreateSnowflakeDatabaseLink(
+		integration, database, schema, role, &creds)
+	action.Exit(rsp, err)
+}
+
+func deleteSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	integration := args[0]
+	database := action.getStringEnv("database", "SNOWSQL_DATABASE")
+	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
+	role := action.getStringEnv("role", "SNOWSQL_ROLE")
+	username := action.getStringEnv("username", "SNOWSQL_USER")
+	password := action.getStringEnv("username", "SNOWSQL_PWD")
+	creds := rai.SnowflakeCredentials{Username: username, Password: password}
+	name := fmt.Sprintf("%s.%s", database, schema)
+	action.Start("Delete Snowflake database link '%s' (%s)", name, integration)
+	err := action.Client().DeleteSnowflakeDatabaseLink(
+		integration, database, schema, role, &creds)
+	action.Exit(nil, err)
+}
+
+func getSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	integration := args[0]
+	database := action.getStringEnv("database", "SNOWSQL_DATABASE")
+	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
+	name := fmt.Sprintf("%s.%s", database, schema)
+	action.Start("Get Snowflake database link '%s' (%s)", name, integration)
+	rsp, err := action.Client().GetSnowflakeDatabaseLink(integration, database, schema)
+	action.Exit(rsp, err)
+}
+
+func listSnowflakeDatabaseLinks(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	integration := args[0]
+	action.Start("List Snowflake database links (%s)", integration)
+	rsp, err := action.Client().ListSnowflakeDatabaseLinks(integration)
 	action.Exit(rsp, err)
 }
 

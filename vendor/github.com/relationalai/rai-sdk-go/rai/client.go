@@ -35,7 +35,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const userAgent = "raictl/" + Version
+const userAgent = "rai-sdk-go/" + Version
 
 type PreRequestHook func(*http.Request) *http.Request
 
@@ -306,22 +306,23 @@ func (c *Client) request(
 
 type HTTPError struct {
 	StatusCode int
+	Headers    http.Header
 	Body       string
 }
 
 func (e HTTPError) Error() string {
 	statusText := http.StatusText(e.StatusCode)
 	if e.Body != "" {
-		return fmt.Sprintf("%d %s\n%s", e.StatusCode, statusText, e.Body)
+		return fmt.Sprintf("%d %s %s\n%s", e.StatusCode, e.Headers, statusText, e.Body)
 	}
-	return fmt.Sprintf("%d %s", e.StatusCode, statusText)
+	return fmt.Sprintf("%d %s %s", e.StatusCode, e.Headers, statusText)
 }
 
-func newHTTPError(status int, body string) error {
-	return HTTPError{StatusCode: status, Body: body}
+func newHTTPError(status int, headers http.Header, body string) error {
+	return HTTPError{StatusCode: status, Headers: headers, Body: body}
 }
 
-var ErrNotFound = newHTTPError(http.StatusNotFound, "")
+var ErrNotFound = newHTTPError(http.StatusNotFound, nil, "")
 
 // Returns an HTTPError corresponding to the given response.
 func httpError(rsp *http.Response) error {
@@ -330,7 +331,7 @@ func httpError(rsp *http.Response) error {
 	if err != nil {
 		data = []byte{}
 	}
-	return newHTTPError(rsp.StatusCode, string(data))
+	return newHTTPError(rsp.StatusCode, rsp.Header, string(data))
 }
 
 // Ansers if the given response has a status code representing an error.
@@ -551,8 +552,10 @@ func (c *Client) DeleteEngine(engine string) error {
 	for !isTerminalState(rsp.State, "DELETED") {
 		time.Sleep(3 * time.Second)
 		if rsp, err = c.GetEngine(engine); err != nil {
-			if err == ErrNotFound {
-				return nil // successfully deleted
+			if e, ok := err.(HTTPError); ok {
+				if e.StatusCode == ErrNotFound.(HTTPError).StatusCode {
+					return nil // successfully deleted
+				}
 			}
 			return err
 		}
@@ -1636,7 +1639,7 @@ func (c *Client) CreateSnowflakeIntegration(
 }
 
 func (c *Client) DeleteSnowflakeIntegration(name string, adminCreds *SnowflakeCredentials) error {
-	req := deleteIntegrationRequest{}
+	req := deleteSnowflakeIntegrationRequest{}
 	req.Snowflake.Admin = *adminCreds
 	return c.Delete(makePath(PathIntegrations, name), nil, &req, nil)
 }
@@ -1652,6 +1655,60 @@ func (c *Client) GetSnowflakeIntegration(name string) (*Integration, error) {
 func (c *Client) ListSnowflakeIntegrations() ([]Integration, error) {
 	var result []Integration
 	if err := c.Get(PathIntegrations, nil, nil, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+//
+// Snowflake Database Links
+//
+
+func (c *Client) CreateSnowflakeDatabaseLink(
+	integration, database, schema, role string, creds *SnowflakeCredentials,
+) (*SnowflakeDatabaseLink, error) {
+	var result SnowflakeDatabaseLink
+	path := makePath(PathIntegrations, integration, "database-links")
+	req := createSnowflakeDatabaseLinkRequest{}
+	req.Snowflake.Database = database
+	req.Snowflake.Schema = schema
+	req.Snowflake.Role = role
+	req.Snowflake.Credentials = *creds
+	if err := c.Post(path, nil, &req, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *Client) DeleteSnowflakeDatabaseLink(
+	integration, database, schema, role string, creds *SnowflakeCredentials,
+) error {
+	name := fmt.Sprintf("%s.%s", database, schema)
+	path := makePath(PathIntegrations, integration, "database-links", name)
+	req := deleteSnowflakeDatabaseLinkRequest{}
+	req.Snowflake.Role = role
+	req.Snowflake.Credentials = *creds
+	return c.Delete(path, nil, &req, nil)
+}
+
+func (c *Client) GetSnowflakeDatabaseLink(
+	integration, database, schema string,
+) (*SnowflakeDatabaseLink, error) {
+	var result SnowflakeDatabaseLink
+	name := fmt.Sprintf("%s.%s", database, schema)
+	path := makePath(PathIntegrations, integration, "database-links", name)
+	if err := c.Get(path, nil, nil, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *Client) ListSnowflakeDatabaseLinks(
+	integration string,
+) ([]SnowflakeDatabaseLink, error) {
+	var result []SnowflakeDatabaseLink
+	path := makePath(PathIntegrations, integration, "database-links")
+	if err := c.Get(path, nil, nil, &result); err != nil {
 		return nil, err
 	}
 	return result, nil

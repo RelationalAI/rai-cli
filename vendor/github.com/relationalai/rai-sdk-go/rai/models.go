@@ -367,8 +367,42 @@ type createSnowflakeIntegrationRequest struct {
 	} `json:"snowflake"`
 }
 
-type deleteIntegrationRequest struct {
+type deleteSnowflakeIntegrationRequest struct {
 	Snowflake struct {
 		Admin SnowflakeCredentials `json:"admin"` // not-persisted
+	} `json:"snowflake"`
+}
+
+//
+// Snowflake Database Links
+//
+
+type SnowflakeDatabaseLink struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"` // database.schema
+	Account     string `json:"account"`
+	CreatedBy   string `json:"createdBy"`
+	CreatedOn   string `json:"createdOn"`
+	State       string `json:"state"`
+	Integration string `json:"integration"`
+	Snowflake   struct {
+		Database string `json:"database"`
+		Schema   string `json:"schema"`
+	} `json:"snowflake"`
+}
+
+type createSnowflakeDatabaseLinkRequest struct {
+	Snowflake struct {
+		Database    string               `json:"database"`
+		Schema      string               `json:"schema"`
+		Role        string               `json:"role"`
+		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
+	} `json:"snowflake"`
+}
+
+type deleteSnowflakeDatabaseLinkRequest struct {
+	Snowflake struct {
+		Role        string               `json:"role"`
+		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
 	} `json:"snowflake"`
 }
