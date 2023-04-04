@@ -837,7 +837,7 @@ func createSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
 	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
 	role := action.getStringEnv("role", "SNOWSQL_ROLE")
 	username := action.getStringEnv("username", "SNOWSQL_USER")
-	password := action.getStringEnv("username", "SNOWSQL_PWD")
+	password := action.getStringEnv("password", "SNOWSQL_PWD")
 	creds := rai.SnowflakeCredentials{Username: username, Password: password}
 	name := fmt.Sprintf("%s.%s", database, schema)
 	action.Start("Create Snowflake database link '%s' (%s)", name, integration)
@@ -853,7 +853,7 @@ func deleteSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
 	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
 	role := action.getStringEnv("role", "SNOWSQL_ROLE")
 	username := action.getStringEnv("username", "SNOWSQL_USER")
-	password := action.getStringEnv("username", "SNOWSQL_PWD")
+	password := action.getStringEnv("password", "SNOWSQL_PWD")
 	creds := rai.SnowflakeCredentials{Username: username, Password: password}
 	name := fmt.Sprintf("%s.%s", database, schema)
 	action.Start("Delete Snowflake database link '%s' (%s)", name, integration)
@@ -878,6 +878,66 @@ func listSnowflakeDatabaseLinks(cmd *cobra.Command, args []string) {
 	integration := args[0]
 	action.Start("List Snowflake database links (%s)", integration)
 	rsp, err := action.Client().ListSnowflakeDatabaseLinks(integration)
+	action.Exit(rsp, err)
+}
+
+//
+// Snowflake database links
+//
+
+func createSnowflakeDatastream(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	integration := args[0]
+	dataStream := args[1]
+	role := action.getStringEnv("role", "SNOWSQL_ROLE")
+	warehouse := action.getStringEnv("warehouse", "SNOWSQL_WAREHOUSE")
+	username := action.getStringEnv("username", "SNOWSQL_USER")
+	password := action.getStringEnv("password", "SNOWSQL_PWD")
+	dbLink := action.getString("database-link")
+	isView := action.getBool("is-view")
+	raiDatabase := action.getString("rai-database")
+	relation := action.getString("relation")
+	creds := &rai.SnowflakeCredentials{Username: username, Password: password}
+
+	action.Start("Create Snowflake data stream '%s' (%s)", dataStream, integration)
+	rsp, err := action.Client().CreateSnowflakeDataStream(
+		integration, dbLink, dataStream,
+		role, warehouse, isView, raiDatabase, relation, creds,
+	)
+	action.Exit(rsp, err)
+}
+func deleteSnowflakeDatastream(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	integration := args[0]
+	dataStream := args[1]
+	role := action.getStringEnv("role", "SNOWSQL_ROLE")
+	username := action.getStringEnv("username", "SNOWSQL_USER")
+	password := action.getStringEnv("password", "SNOWSQL_PWD")
+	dbLink := action.getString("database-link")
+	creds := rai.SnowflakeCredentials{Username: username, Password: password}
+	action.Start("Delete Snowflake data stream %s (%s)", dataStream, integration)
+	err := action.Client().DeleteSnowflakeDataStream(
+		integration, dbLink, dataStream, role, &creds,
+	)
+	action.Exit(nil, err)
+}
+func getSnowflakeDatastream(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	integration := args[0]
+	dataStream := args[1]
+	dbLink := action.getString("database-link")
+	action.Start("Get Snowflake data stream %s (%s)", dataStream, integration)
+	rsp, err := action.Client().GetSnowflakeDataStream(integration, dbLink, dataStream)
+	action.Exit(rsp, err)
+}
+
+func listSnowflakeDatastreams(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	integration := args[0]
+
+	dbLink := action.getString("database-link")
+	action.Start("List Snowflake datastreams linked to %s (%s)", dbLink, integration)
+	rsp, err := action.Client().ListSnowflakeDataStreams(integration, dbLink)
 	action.Exit(rsp, err)
 }
 

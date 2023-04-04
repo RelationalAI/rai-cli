@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.5-alpha
+
+* Add Snowflake data stream commands
+
 ## v0.1.4-alpha
 
 * Add Snowflake integration commands
