@@ -409,7 +409,7 @@ func addCommands(root *cobra.Command) {
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
-		Use:   "list-snowflake-data-stream integration",
+		Use:   "list-snowflake-data-streams integration",
 		Short: "List Snowflake data streams associated with an integration ",
 		Args:  cobra.ExactArgs(1),
 		Run:   listSnowflakeDatastreams}

@@ -934,7 +934,6 @@ func getSnowflakeDatastream(cmd *cobra.Command, args []string) {
 func listSnowflakeDatastreams(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	integration := args[0]
-
 	dbLink := action.getString("database-link")
 	action.Start("List Snowflake datastreams linked to %s (%s)", dbLink, integration)
 	rsp, err := action.Client().ListSnowflakeDataStreams(integration, dbLink)
