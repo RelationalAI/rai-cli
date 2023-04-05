@@ -49,7 +49,7 @@ github.com/pierrec/lz4/v4/internal/xxh32
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# github.com/relationalai/rai-sdk-go v0.4.4-alpha
+# github.com/relationalai/rai-sdk-go v0.4.5-alpha
 ## explicit; go 1.18
 github.com/relationalai/rai-sdk-go/rai
 github.com/relationalai/rai-sdk-go/rai/pb
