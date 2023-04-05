@@ -782,9 +782,15 @@ func updateUser(cmd *cobra.Command, args []string) {
 // Snowflake integrations
 //
 
+var ErrNoEngineForIntegration = errors.New("an integration must be assigned an engine")
+
 func createSnowflakeIntegration(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	name := args[0]
+	engine := action.getString("engine")
+	if engine == "" {
+		action.Exit(nil, ErrNoEngineForIntegration)
+	}
 	account := action.getStringEnv("account", "SNOWSQL_ACCOUNT")
 	adminUsername := action.getStringEnv("admin-username", "SNOWSQL_USER")
 	adminPassword := action.getStringEnv("admin-password", "SNOWSQL_PWD")
@@ -796,7 +802,7 @@ func createSnowflakeIntegration(cmd *cobra.Command, args []string) {
 		Username: proxyUsername, Password: proxyPassword}
 	action.Start("Create Snowflake integration '%s' account='%s'", name, account)
 	rsp, err := action.Client().CreateSnowflakeIntegration(
-		name, account, &adminCreds, &proxyCreds)
+		name, account, engine, &adminCreds, &proxyCreds)
 	action.Exit(rsp, err)
 }
 
@@ -906,6 +912,7 @@ func createSnowflakeDatastream(cmd *cobra.Command, args []string) {
 	)
 	action.Exit(rsp, err)
 }
+
 func deleteSnowflakeDatastream(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	integration := args[0]
@@ -921,6 +928,7 @@ func deleteSnowflakeDatastream(cmd *cobra.Command, args []string) {
 	)
 	action.Exit(nil, err)
 }
+
 func getSnowflakeDatastream(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	integration := args[0]

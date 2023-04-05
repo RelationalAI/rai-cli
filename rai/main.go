@@ -296,6 +296,7 @@ func addCommands(root *cobra.Command) {
 		Short: "Create a Snowflake integration",
 		Args:  cobra.ExactArgs(1),
 		Run:   createSnowflakeIntegration}
+	cmd.Flags().String("engine", "", "default RAI engine for integration initiated actions (required)")
 	cmd.Flags().String("account", "", "Snowflake account (default: SNOWSQL_ACCOUNT env var)")
 	cmd.Flags().String("admin-username", "", "Snowflake admin username (default: SNOWSQL_USER env var")
 	cmd.Flags().String("admin-password", "", "Snowflake admin password (default: SNOWSQL_PWD env var")
