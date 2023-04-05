@@ -1625,13 +1625,14 @@ func (c *Client) UpdateUser(id string, req UpdateUserRequest) (*User, error) {
 //
 
 func (c *Client) CreateSnowflakeIntegration(
-	name, snowflakeAccount string, adminCreds, proxyCreds *SnowflakeCredentials,
+	name, snowflakeAccount, raiEngine string, adminCreds, proxyCreds *SnowflakeCredentials,
 ) (*Integration, error) {
 	var result Integration
 	req := createSnowflakeIntegrationRequest{Name: name}
 	req.Snowflake.Account = snowflakeAccount
 	req.Snowflake.Admin = *adminCreds
 	req.Snowflake.Proxy = *proxyCreds
+	req.RAI.Engine = raiEngine
 	if err := c.Post(PathIntegrations, nil, &req, &result); err != nil {
 		return nil, err
 	}
@@ -1708,6 +1709,70 @@ func (c *Client) ListSnowflakeDatabaseLinks(
 ) ([]SnowflakeDatabaseLink, error) {
 	var result []SnowflakeDatabaseLink
 	path := makePath(PathIntegrations, integration, "database-links")
+	if err := c.Get(path, nil, nil, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+//
+// Snowflake Data Streams
+//
+
+type DataStreamOpts struct {
+	IsView      bool
+	RaiDatabase string
+	Relation    string
+	ObjectName  string
+	Role        string
+	Warehouse   string
+}
+
+func (c *Client) CreateSnowflakeDataStream(
+	integration, dbLink string, creds *SnowflakeCredentials, opts *DataStreamOpts,
+) (*SnowflakeDataStream, error) {
+	var result SnowflakeDataStream
+	path := makePath(PathIntegrations, integration, "database-links", dbLink, "data-streams")
+	req := createSnowflakeDataStreamRequest{}
+	req.Snowflake.Object = opts.ObjectName
+	req.Snowflake.IsView = opts.IsView
+	req.Snowflake.Role = opts.Role
+	req.Snowflake.Warehouse = opts.Warehouse
+	req.Snowflake.Credentials = *creds
+	req.RAI.Database = opts.RaiDatabase
+	req.RAI.Relation = opts.Relation
+	if err := c.Post(path, nil, &req, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *Client) DeleteSnowflakeDataStream(
+	integration, dbLink, objectName, role string, creds *SnowflakeCredentials,
+) error {
+	path := makePath(PathIntegrations, integration, "database-links", dbLink, "data-streams", objectName)
+	req := deleteSnowflakeDataStreamRequest{}
+	req.Snowflake.Role = role
+	req.Snowflake.Credentials = *creds
+	return c.Delete(path, nil, &req, nil)
+}
+
+func (c *Client) GetSnowflakeDataStream(
+	integration, dbLink, objectName string,
+) (*SnowflakeDataStream, error) {
+	var result SnowflakeDataStream
+	path := makePath(PathIntegrations, integration, "database-links", dbLink, "data-streams", objectName)
+	if err := c.Get(path, nil, nil, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *Client) ListSnowflakeDataStreams(
+	integration, dbLink string,
+) ([]SnowflakeDataStream, error) {
+	var result []SnowflakeDataStream
+	path := makePath(PathIntegrations, integration, "database-links", dbLink, "data-streams")
 	if err := c.Get(path, nil, nil, &result); err != nil {
 		return nil, err
 	}

@@ -297,6 +297,7 @@ func addCommands(root *cobra.Command) {
 		Args:  cobra.ExactArgs(1),
 		Run:   createSnowflakeIntegration}
 	cmd.Flags().String("engine", "", "default RAI engine for integration initiated actions (required)")
+	cmd.MarkFlagRequired("engine")
 	cmd.Flags().String("account", "", "Snowflake account (default: SNOWSQL_ACCOUNT env var)")
 	cmd.Flags().String("admin-username", "", "Snowflake admin username (default: SNOWSQL_USER env var")
 	cmd.Flags().String("admin-password", "", "Snowflake admin password (default: SNOWSQL_PWD env var")
@@ -370,30 +371,26 @@ func addCommands(root *cobra.Command) {
 
 	// Snowflake Data Streams
 	cmd = &cobra.Command{
-		Use:   "create-snowflake-data-streams integration objectName",
+		Use:   "create-snowflake-data-stream integration database-link objectName",
 		Short: "Create Snowflake data stream associated with an integration",
-		Args:  cobra.ExactArgs(2),
-		Run:   createSnowflakeDatastream}
-	cmd.Flags().String("database", "", "Snowflake linked database (default: SNOWSQL_DATABASE env var)")
-	cmd.Flags().String("schema", "", "Snowflake linked schema (default: SNOWSQL_SCHEMA env var)")
+		Args:  cobra.ExactArgs(3),
+		Run:   createSnowflakeDataStream}
 	cmd.Flags().String("role", "", "Snowflake role (default: SNOWSQL_ROLE env var)")
 	cmd.Flags().String("warehouse", "", "Snowflake warehouse (default: SNOWSQL_WAREHOUSE env var)")
 	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER env var)")
 	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD env var)")
 	cmd.Flags().Bool("is-view", false, "Snowflake object is a view (default: false)")
-	cmd.Flags().String("rai-database", "", "RelationAI target database name")
+	cmd.Flags().String("rai-database", "", "RelationalAI target database name")
 	cmd.MarkFlagRequired("rai-database")
-	cmd.Flags().String("relation", "", "RelationAI relation")
-	cmd.MarkFlagRequired("relation")
+	cmd.Flags().String("rai-relation", "", "RelationalAI target relation")
+	cmd.MarkFlagRequired("rai-relation")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
-		Use:   "delete-snowflake-data-stream integration objectName",
+		Use:   "delete-snowflake-data-stream integration database-link objectName",
 		Short: "Delete a Snowflake data stream associated with an integration",
-		Args:  cobra.ExactArgs(2),
-		Run:   deleteSnowflakeDatastream}
-	cmd.Flags().String("database-link", "", "Integration databse-link name (required)")
-	cmd.MarkFlagRequired("database-link")
+		Args:  cobra.ExactArgs(3),
+		Run:   deleteSnowflakeDataStream}
 	cmd.Flags().String("role", "", "Snowflake role (default: SNOWSQL_ROLE env var)")
 	cmd.Flags().String("warehouse", "", "Snowflake warehouse (default: SNOWSQL_WAREHOUSE env var)")
 	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER env var)")
@@ -401,21 +398,17 @@ func addCommands(root *cobra.Command) {
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
-		Use:   "get-snowflake-data-stream integration objectName",
-		Short: "Get information about a Snowflake data stream associated with an integration",
-		Args:  cobra.ExactArgs(2),
-		Run:   getSnowflakeDatastream}
-	cmd.Flags().String("database-link", "", "Integration databse-link name (required)")
-	cmd.MarkFlagRequired("database-link")
+		Use:   "get-snowflake-data-stream integration database-link objectName",
+		Short: "Get information about a Snowflake data stream associated with an integration and database-link",
+		Args:  cobra.ExactArgs(3),
+		Run:   getSnowflakeDataStream}
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
-		Use:   "list-snowflake-data-streams integration",
+		Use:   "list-snowflake-data-streams integration database-link",
 		Short: "List Snowflake data streams associated with an integration ",
-		Args:  cobra.ExactArgs(1),
-		Run:   listSnowflakeDatastreams}
-	cmd.Flags().String("database-link", "", "Integration databse-link name (required)")
-	cmd.MarkFlagRequired("database-link")
+		Args:  cobra.ExactArgs(2),
+		Run:   listSnowflakeDataStreams}
 	root.AddCommand(cmd)
 
 	// Misc

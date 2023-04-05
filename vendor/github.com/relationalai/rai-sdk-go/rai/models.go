@@ -351,6 +351,9 @@ type Integration struct {
 	Snowflake  struct {
 		Account string `json:"account"`
 	} `json:"snowflake"`
+	RAI struct {
+		Engine string `json:"engine"`
+	} `json:"rai"`
 }
 
 type SnowflakeCredentials struct {
@@ -365,6 +368,9 @@ type createSnowflakeIntegrationRequest struct {
 		Admin   SnowflakeCredentials `json:"admin"`   // not-persisted
 		Proxy   SnowflakeCredentials `json:"proxy"`   // persisted
 	} `json:"snowflake"`
+	RAI struct {
+		Engine string `json:"engine"`
+	} `json:"rai"`
 }
 
 type deleteSnowflakeIntegrationRequest struct {
@@ -401,6 +407,51 @@ type createSnowflakeDatabaseLinkRequest struct {
 }
 
 type deleteSnowflakeDatabaseLinkRequest struct {
+	Snowflake struct {
+		Role        string               `json:"role"`
+		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
+	} `json:"snowflake"`
+}
+
+//
+// Snowflake Data Stream
+//
+
+type SnowflakeDataStream struct {
+	Account     string `json:"account"` // partition key
+	ID          string `json:"id"`
+	Name        string `json:"name"` // database.schema.object
+	Integration string `json:"integration"`
+	DbLink      string `json:"dbLink"`
+	CreatedBy   string `json:"createdBy"`
+	CreatedOn   string `json:"createdOn"`
+	State       string `json:"state"`
+	Snowflake   struct {
+		Database string `json:"database"`
+		Schema   string `json:"schema"`
+		Object   string `json:"object"` // fully qualified object name
+	} `json:"snowflake"`
+	RAI struct {
+		Database string `json:"database"`
+		Relation string `json:"relation"`
+	} `json:"rai"`
+}
+
+type createSnowflakeDataStreamRequest struct {
+	Snowflake struct {
+		Object      string               `json:"object"` // fully qualified object name
+		IsView      bool                 `json:"isView"`
+		Role        string               `json:"role"`
+		Warehouse   string               `json:"warehouse"`
+		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
+	} `json:"snowflake"`
+	RAI struct {
+		Database string `json:"database"`
+		Relation string `json:"relation"`
+	} `json:"rai"`
+}
+
+type deleteSnowflakeDataStreamRequest struct {
 	Snowflake struct {
 		Role        string               `json:"role"`
 		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
