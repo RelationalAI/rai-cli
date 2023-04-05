@@ -888,7 +888,7 @@ func listSnowflakeDatabaseLinks(cmd *cobra.Command, args []string) {
 }
 
 //
-// Snowflake database links
+// Snowflake data streams
 //
 
 func createSnowflakeDatastream(cmd *cobra.Command, args []string) {
