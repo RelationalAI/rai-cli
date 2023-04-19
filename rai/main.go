@@ -379,7 +379,7 @@ func addCommands(root *cobra.Command) {
 	cmd.Flags().String("warehouse", "", "Snowflake warehouse (default: SNOWSQL_WAREHOUSE env var)")
 	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER env var)")
 	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD env var)")
-	cmd.Flags().Bool("is-view", false, "Snowflake object is a view (default: false)")
+	cmd.Flags().String("object-type", "", "Snowflake object type (default: table)")
 	cmd.Flags().String("rai-database", "", "RelationalAI target database name")
 	cmd.MarkFlagRequired("rai-database")
 	cmd.Flags().String("rai-relation", "", "RelationalAI target relation")
@@ -409,6 +409,13 @@ func addCommands(root *cobra.Command) {
 		Short: "List Snowflake data streams associated with an integration ",
 		Args:  cobra.ExactArgs(2),
 		Run:   listSnowflakeDataStreams}
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "get-snowflake-data-stream-status integration database-link objectName",
+		Short: "Get status information about a Snowflake data stream associated with an integration and database-link",
+		Args:  cobra.ExactArgs(3),
+		Run:   getSnowflakeDataStreamStatus}
 	root.AddCommand(cmd)
 
 	// Misc

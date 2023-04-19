@@ -427,9 +427,10 @@ type SnowflakeDataStream struct {
 	CreatedOn   string `json:"createdOn"`
 	State       string `json:"state"`
 	Snowflake   struct {
-		Database string `json:"database"`
-		Schema   string `json:"schema"`
-		Object   string `json:"object"` // fully qualified object name
+		Database   string `json:"database"`
+		Schema     string `json:"schema"`
+		Object     string `json:"object"` // fully qualified object name
+		ObjectType string `json:"objectType"`
 	} `json:"snowflake"`
 	RAI struct {
 		Database string `json:"database"`
@@ -440,7 +441,7 @@ type SnowflakeDataStream struct {
 type createSnowflakeDataStreamRequest struct {
 	Snowflake struct {
 		Object      string               `json:"object"` // fully qualified object name
-		IsView      bool                 `json:"isView"`
+		ObjectType  string               `json:"objectType"`
 		Role        string               `json:"role"`
 		Warehouse   string               `json:"warehouse"`
 		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
@@ -456,4 +457,12 @@ type deleteSnowflakeDataStreamRequest struct {
 		Role        string               `json:"role"`
 		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
 	} `json:"snowflake"`
+}
+
+type SnowflakeDataStreamStatus struct {
+	ID                   string `json:"id"`
+	SnowflakeUnloadStart int64  `json:"snowflakeUnloadStart"` //  time of stream actions started from snowflake
+	RaiLoadEnd           int64  `json:"raiLoadEnd"`           // time of stream actions complete
+	Name                 string `json:"name"`                 // integration + dataStream name
+	Account              string `json:"account"`
 }

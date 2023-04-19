@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.6-alpha
+* Add Snowflake data stream status support
+* Modify Snowflake data stream create for view support
+
 ## v0.1.5-alpha
 
 * Add Snowflake data stream commands

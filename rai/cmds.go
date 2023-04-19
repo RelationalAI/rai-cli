@@ -895,13 +895,13 @@ func createSnowflakeDataStream(cmd *cobra.Command, args []string) {
 	warehouse := action.getStringEnv("warehouse", "SNOWSQL_WAREHOUSE")
 	username := action.getStringEnv("username", "SNOWSQL_USER")
 	password := action.getStringEnv("password", "SNOWSQL_PWD")
-	isView := action.getBool("is-view")
+	objectType := action.getString("object-type")
 	raiDatabase := action.getString("rai-database")
 	relation := action.getString("rai-relation")
 	creds := &rai.SnowflakeCredentials{Username: username, Password: password}
 
 	opts := &rai.DataStreamOpts{
-		IsView:      isView,
+		ObjectType:  objectType,
 		RaiDatabase: raiDatabase,
 		Relation:    relation,
 		ObjectName:  dataStream,
@@ -945,6 +945,16 @@ func listSnowflakeDataStreams(cmd *cobra.Command, args []string) {
 	dbLink := args[1]
 	action.Start("List Snowflake dataStreams linked to %s (%s)", dbLink, integration)
 	rsp, err := action.Client().ListSnowflakeDataStreams(integration, dbLink)
+	action.Exit(rsp, err)
+}
+
+func getSnowflakeDataStreamStatus(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	integration := args[0]
+	dbLink := args[1]
+	dataStream := args[2]
+	action.Start("Get Snowflake data stream status %s (%s)", dataStream, integration)
+	rsp, err := action.Client().GetSnowflakeDataStreamStatus(integration, dbLink, dataStream)
 	action.Exit(rsp, err)
 }
 
