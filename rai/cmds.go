@@ -613,6 +613,14 @@ func listEdbNames(cmd *cobra.Command, args []string) {
 	action.Exit(names, nil)
 }
 
+func listTransactions(cmd *cobra.Command, args []string) {
+	// assert len(args) == 1
+	action := newAction(cmd)
+	action.Start("List transactions")
+	rsp, err := action.Client().ListTransactions()
+	action.Exit(rsp, err)
+}
+
 // Parse the schema option string into the schema definition map that is
 // expected by the golang client.
 //
