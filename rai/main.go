@@ -296,8 +296,6 @@ func addCommands(root *cobra.Command) {
 		Short: "Create a Snowflake integration",
 		Args:  cobra.ExactArgs(1),
 		Run:   createSnowflakeIntegration}
-	cmd.Flags().String("engine", "", "default RAI engine for integration initiated actions (required)")
-	cmd.MarkFlagRequired("engine")
 	cmd.Flags().String("account", "", "Snowflake account (default: SNOWSQL_ACCOUNT env var)")
 	cmd.Flags().String("admin-username", "", "Snowflake admin username (default: SNOWSQL_USER env var")
 	cmd.Flags().String("admin-password", "", "Snowflake admin password (default: SNOWSQL_PWD env var")
@@ -379,7 +377,10 @@ func addCommands(root *cobra.Command) {
 	cmd.Flags().String("warehouse", "", "Snowflake warehouse (default: SNOWSQL_WAREHOUSE env var)")
 	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER env var)")
 	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD env var)")
+<<<<<<< Updated upstream
 	cmd.Flags().String("object-type", "", "Snowflake object type (default: table)")
+=======
+>>>>>>> Stashed changes
 	cmd.Flags().String("rai-database", "", "RelationalAI target database name")
 	cmd.MarkFlagRequired("rai-database")
 	cmd.Flags().String("rai-relation", "", "RelationalAI target relation")
