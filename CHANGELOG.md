@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.0-alpha
+
+* Remove engine flag from create integration 
+* Remove is-view from create datastream 
+
 ## v0.1.6-alpha
 * Add Snowflake data stream status support
 * Modify Snowflake data stream create for view support

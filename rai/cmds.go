@@ -785,7 +785,6 @@ func updateUser(cmd *cobra.Command, args []string) {
 func createSnowflakeIntegration(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	name := args[0]
-	engine := action.getString("engine")
 	account := action.getStringEnv("account", "SNOWSQL_ACCOUNT")
 	adminUsername := action.getStringEnv("admin-username", "SNOWSQL_USER")
 	adminPassword := action.getStringEnv("admin-password", "SNOWSQL_PWD")
@@ -797,7 +796,7 @@ func createSnowflakeIntegration(cmd *cobra.Command, args []string) {
 		Username: proxyUsername, Password: proxyPassword}
 	action.Start("Create Snowflake integration '%s' account='%s'", name, account)
 	rsp, err := action.Client().CreateSnowflakeIntegration(
-		name, account, engine, &adminCreds, &proxyCreds)
+		name, account, &adminCreds, &proxyCreds)
 	action.Exit(rsp, err)
 }
 
@@ -895,13 +894,11 @@ func createSnowflakeDataStream(cmd *cobra.Command, args []string) {
 	warehouse := action.getStringEnv("warehouse", "SNOWSQL_WAREHOUSE")
 	username := action.getStringEnv("username", "SNOWSQL_USER")
 	password := action.getStringEnv("password", "SNOWSQL_PWD")
-	objectType := action.getString("object-type")
 	raiDatabase := action.getString("rai-database")
 	relation := action.getString("rai-relation")
 	creds := &rai.SnowflakeCredentials{Username: username, Password: password}
 
 	opts := &rai.DataStreamOpts{
-		ObjectType:  objectType,
 		RaiDatabase: raiDatabase,
 		Relation:    relation,
 		ObjectName:  dataStream,
