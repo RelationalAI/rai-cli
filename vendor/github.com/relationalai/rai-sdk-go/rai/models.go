@@ -38,9 +38,9 @@ type Database struct {
 }
 
 type EDB struct {
-	Name   string   `json:"name"`
-	Keys   []string `json:"keys"`
-	Values []string `json:"values"`
+	Name   string        `json:"name"`
+	Keys   []interface{} `json:"keys"`
+	Values []interface{} `json:"values"`
 }
 
 type Engine struct {
@@ -368,9 +368,17 @@ type createSnowflakeIntegrationRequest struct {
 		Admin   SnowflakeCredentials `json:"admin"`   // not-persisted
 		Proxy   SnowflakeCredentials `json:"proxy"`   // persisted
 	} `json:"snowflake"`
+}
+
+type updateSnowflakeIntegrationRequest struct {
+	Name      string `json:"name"`
+	Snowflake struct {
+		Proxy SnowflakeCredentials `json:"proxy"` // persisted
+	} `json:"snowflake"`
 	RAI struct {
-		Engine string `json:"engine"`
-	} `json:"rai"`
+		ClientID     string `json:"clientID"`
+		ClientSecret string `json:"clientSecret"`
+	}
 }
 
 type deleteSnowflakeIntegrationRequest struct {
@@ -427,10 +435,9 @@ type SnowflakeDataStream struct {
 	CreatedOn   string `json:"createdOn"`
 	State       string `json:"state"`
 	Snowflake   struct {
-		Database   string `json:"database"`
-		Schema     string `json:"schema"`
-		Object     string `json:"object"` // fully qualified object name
-		ObjectType string `json:"objectType"`
+		Database string `json:"database"`
+		Schema   string `json:"schema"`
+		Object   string `json:"object"` // fully qualified object name
 	} `json:"snowflake"`
 	RAI struct {
 		Database string `json:"database"`
@@ -441,7 +448,6 @@ type SnowflakeDataStream struct {
 type createSnowflakeDataStreamRequest struct {
 	Snowflake struct {
 		Object      string               `json:"object"` // fully qualified object name
-		ObjectType  string               `json:"objectType"`
 		Role        string               `json:"role"`
 		Warehouse   string               `json:"warehouse"`
 		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted

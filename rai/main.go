@@ -304,6 +304,17 @@ func addCommands(root *cobra.Command) {
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
+		Use:   "update-snowflake-integration name",
+		Short: "Update a Snowflake integration",
+		Args:  cobra.ExactArgs(1),
+		Run:   updateSnowflakeIntegration}
+	cmd.Flags().String("rai-client-id", "", "OAuth client ID used for RAI operations executed as part of the integration")
+	cmd.Flags().String("rai-client-secret", "", "OAuth client secret used for RAI operations executed as part of the integration")
+	cmd.Flags().String("proxy-username", "", "Snowflake proxy username (default: SNOWSQL_USER env var)")
+	cmd.Flags().String("proxy-password", "", "Snowflake proxy password (default: SNOWSQL_PWD env var)")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
 		Use:   "delete-snowflake-integration name",
 		Short: "Delete a Snowflake integration",
 		Args:  cobra.ExactArgs(1),
