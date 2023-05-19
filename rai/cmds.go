@@ -785,7 +785,6 @@ func updateUser(cmd *cobra.Command, args []string) {
 func createSnowflakeIntegration(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	name := args[0]
-	engine := action.getString("engine")
 	account := action.getStringEnv("account", "SNOWSQL_ACCOUNT")
 	adminUsername := action.getStringEnv("admin-username", "SNOWSQL_USER")
 	adminPassword := action.getStringEnv("admin-password", "SNOWSQL_PWD")
@@ -797,8 +796,23 @@ func createSnowflakeIntegration(cmd *cobra.Command, args []string) {
 		Username: proxyUsername, Password: proxyPassword}
 	action.Start("Create Snowflake integration '%s' account='%s'", name, account)
 	rsp, err := action.Client().CreateSnowflakeIntegration(
-		name, account, engine, &adminCreds, &proxyCreds)
+		name, account, &adminCreds, &proxyCreds)
 	action.Exit(rsp, err)
+}
+
+func updateSnowflakeIntegration(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	name := args[0]
+	raiClientID := action.getString("rai-client-id")
+	raiClientSecret := action.getString("rai-client-secret")
+	proxyUsername := action.getStringEnv("proxy-username", "SNOWSQL_USER")
+	proxyPassword := action.getStringEnv("proxy-password", "SNOWSQL_PWD")
+	proxyCreds := rai.SnowflakeCredentials{
+		Username: proxyUsername, Password: proxyPassword}
+	action.Start("Update Snowflake integration '%s'", name)
+	err := action.Client().UpdateSnowflakeIntegration(
+		name, raiClientID, raiClientSecret, &proxyCreds)
+	action.Exit(nil, err)
 }
 
 func deleteSnowflakeIntegration(cmd *cobra.Command, args []string) {
@@ -895,13 +909,11 @@ func createSnowflakeDataStream(cmd *cobra.Command, args []string) {
 	warehouse := action.getStringEnv("warehouse", "SNOWSQL_WAREHOUSE")
 	username := action.getStringEnv("username", "SNOWSQL_USER")
 	password := action.getStringEnv("password", "SNOWSQL_PWD")
-	objectType := action.getString("object-type")
 	raiDatabase := action.getString("rai-database")
 	relation := action.getString("rai-relation")
 	creds := &rai.SnowflakeCredentials{Username: username, Password: password}
 
 	opts := &rai.DataStreamOpts{
-		ObjectType:  objectType,
 		RaiDatabase: raiDatabase,
 		Relation:    relation,
 		ObjectName:  dataStream,

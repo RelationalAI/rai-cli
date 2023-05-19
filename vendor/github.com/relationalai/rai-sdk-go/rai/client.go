@@ -1625,18 +1625,28 @@ func (c *Client) UpdateUser(id string, req UpdateUserRequest) (*User, error) {
 //
 
 func (c *Client) CreateSnowflakeIntegration(
-	name, snowflakeAccount, raiEngine string, adminCreds, proxyCreds *SnowflakeCredentials,
+	name, snowflakeAccount string, adminCreds, proxyCreds *SnowflakeCredentials,
 ) (*Integration, error) {
 	var result Integration
 	req := createSnowflakeIntegrationRequest{Name: name}
 	req.Snowflake.Account = snowflakeAccount
 	req.Snowflake.Admin = *adminCreds
 	req.Snowflake.Proxy = *proxyCreds
-	req.RAI.Engine = raiEngine
 	if err := c.Post(PathIntegrations, nil, &req, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
+}
+
+func (c *Client) UpdateSnowflakeIntegration(
+	name, raiClientID, raiClientSecret string, proxyCreds *SnowflakeCredentials,
+) (error) {
+	var result Integration
+	req := updateSnowflakeIntegrationRequest{Name: name}
+	req.Snowflake.Proxy = *proxyCreds
+	req.RAI.ClientID = raiClientID
+	req.RAI.ClientSecret = raiClientSecret
+	return c.Patch(PathIntegrations, nil, &req, &result)
 }
 
 func (c *Client) DeleteSnowflakeIntegration(name string, adminCreds *SnowflakeCredentials) error {
@@ -1723,13 +1733,11 @@ type DataStreamOpts struct {
 	RaiDatabase string
 	Relation    string
 	ObjectName  string
-	ObjectType  string
 	Role        string
 	Warehouse   string
 }
 
 // Creates a data stream to replicate data from a Snowflake table/view to a RAI relation.
-// The opts.Snowflake.ObjectType argument takes either "view" or "table". It is optional and will default to "table".
 func (c *Client) CreateSnowflakeDataStream(
 	integration, dbLink string, creds *SnowflakeCredentials, opts *DataStreamOpts,
 ) (*SnowflakeDataStream, error) {
@@ -1737,7 +1745,6 @@ func (c *Client) CreateSnowflakeDataStream(
 	path := makePath(PathIntegrations, integration, "database-links", dbLink, "data-streams")
 	req := createSnowflakeDataStreamRequest{}
 	req.Snowflake.Object = opts.ObjectName
-	req.Snowflake.ObjectType = opts.ObjectType
 	req.Snowflake.Role = opts.Role
 	req.Snowflake.Warehouse = opts.Warehouse
 	req.Snowflake.Credentials = *creds
