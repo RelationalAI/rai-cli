@@ -297,9 +297,20 @@ func addCommands(root *cobra.Command) {
 		Args:  cobra.ExactArgs(1),
 		Run:   createSnowflakeIntegration}
 	cmd.Flags().String("account", "", "Snowflake account (default: SNOWSQL_ACCOUNT env var)")
-	cmd.Flags().String("admin-username", "", "Snowflake admin username (default: SNOWSQL_USER env var")
-	cmd.Flags().String("admin-password", "", "Snowflake admin password (default: SNOWSQL_PWD env var")
-	cmd.Flags().String("proxy-username", "", "Snowflake proxy username (default: SNOWSQL_USER env var")
+	cmd.Flags().String("admin-username", "", "Snowflake admin username (default: SNOWSQL_USER env var)")
+	cmd.Flags().String("admin-password", "", "Snowflake admin password (default: SNOWSQL_PWD env var)")
+	cmd.Flags().String("proxy-username", "", "Snowflake proxy username (default: SNOWSQL_USER env var)")
+	cmd.Flags().String("proxy-password", "", "Snowflake proxy password (default: SNOWSQL_PWD env var)")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
+		Use:   "update-snowflake-integration name",
+		Short: "Update a Snowflake integration",
+		Args:  cobra.ExactArgs(1),
+		Run:   updateSnowflakeIntegration}
+	cmd.Flags().String("rai-client-id", "", "OAuth client ID used for RAI operations executed as part of the integration")
+	cmd.Flags().String("rai-client-secret", "", "OAuth client secret used for RAI operations executed as part of the integration")
+	cmd.Flags().String("proxy-username", "", "Snowflake proxy username (default: SNOWSQL_USER env var)")
 	cmd.Flags().String("proxy-password", "", "Snowflake proxy password (default: SNOWSQL_PWD env var)")
 	root.AddCommand(cmd)
 
@@ -309,7 +320,7 @@ func addCommands(root *cobra.Command) {
 		Args:  cobra.ExactArgs(1),
 		Run:   deleteSnowflakeIntegration}
 	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER env var)")
-	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD env var")
+	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD env var)")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{

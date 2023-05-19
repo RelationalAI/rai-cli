@@ -800,6 +800,21 @@ func createSnowflakeIntegration(cmd *cobra.Command, args []string) {
 	action.Exit(rsp, err)
 }
 
+func updateSnowflakeIntegration(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	name := args[0]
+	raiClientID := action.getString("rai-client-id")
+	raiClientSecret := action.getString("rai-client-secret")
+	proxyUsername := action.getStringEnv("proxy-username", "SNOWSQL_USER")
+	proxyPassword := action.getStringEnv("proxy-password", "SNOWSQL_PWD")
+	proxyCreds := rai.SnowflakeCredentials{
+		Username: proxyUsername, Password: proxyPassword}
+	action.Start("Update Snowflake integration '%s'", name)
+	err := action.Client().UpdateSnowflakeIntegration(
+		name, raiClientID, raiClientSecret, &proxyCreds)
+	action.Exit(nil, err)
+}
+
 func deleteSnowflakeIntegration(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	name := args[0]
