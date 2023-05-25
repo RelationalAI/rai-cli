@@ -351,6 +351,19 @@ func addCommands(root *cobra.Command) {
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
+		Use:   "update-snowflake-database-link integration",
+		Short: "Update a Snowflake database link",
+		Args:  cobra.ExactArgs(1),
+		Run:   updateSnowflakeDatabaseLink}
+	cmd.Flags().String("database", "", "Snowflake database (default: SNOWSQL_DATABASE env var)")
+	cmd.Flags().String("schema", "", "Snowflake schema (default: SNOWSQL_SCHEMA env var)")
+	cmd.Flags().String("role", "", "Snowflake role (default: SNOWSQL_ROLE env var)")
+	cmd.Flags().String("warehouse", "", "Snowflake warehouse (default: SNOWSQL_WAREHOUSE env var)")
+	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER env var)")
+	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD env var)")
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
 		Use:   "delete-snowflake-database-link integration",
 		Short: "Delete a Snowflake database link",
 		Args:  cobra.ExactArgs(1),

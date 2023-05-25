@@ -414,6 +414,14 @@ type createSnowflakeDatabaseLinkRequest struct {
 	} `json:"snowflake"`
 }
 
+type updateSnowflakeDatabaseLinkRequest struct {
+	Snowflake struct {
+		Role        string               `json:"role"`
+		Warehouse   string               `json:"warehouse"`
+		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
+	} `json:"snowflake"`
+}
+
 type deleteSnowflakeDatabaseLinkRequest struct {
 	Snowflake struct {
 		Role        string               `json:"role"`
