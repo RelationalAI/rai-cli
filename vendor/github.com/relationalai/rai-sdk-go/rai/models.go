@@ -351,9 +351,6 @@ type Integration struct {
 	Snowflake  struct {
 		Account string `json:"account"`
 	} `json:"snowflake"`
-	RAI struct {
-		Engine string `json:"engine"`
-	} `json:"rai"`
 }
 
 type SnowflakeCredentials struct {
@@ -414,6 +411,13 @@ type createSnowflakeDatabaseLinkRequest struct {
 	} `json:"snowflake"`
 }
 
+type updateSnowflakeDatabaseLinkRequest struct {
+	Snowflake struct {
+		Role        string               `json:"role"`
+		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
+	} `json:"snowflake"`
+}
+
 type deleteSnowflakeDatabaseLinkRequest struct {
 	Snowflake struct {
 		Role        string               `json:"role"`
@@ -450,7 +454,7 @@ type createSnowflakeDataStreamRequest struct {
 		Object      string               `json:"object"` // fully qualified object name
 		Role        string               `json:"role"`
 		Warehouse   string               `json:"warehouse"`
-		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
+		Credentials SnowflakeCredentials `json:"credentials"` // optional, not-persisted
 	} `json:"snowflake"`
 	RAI struct {
 		Database string `json:"database"`
@@ -461,7 +465,7 @@ type createSnowflakeDataStreamRequest struct {
 type deleteSnowflakeDataStreamRequest struct {
 	Snowflake struct {
 		Role        string               `json:"role"`
-		Credentials SnowflakeCredentials `json:"credentials"` // not-persisted
+		Credentials SnowflakeCredentials `json:"credentials"` // optional, not-persisted
 	} `json:"snowflake"`
 }
 
