@@ -861,6 +861,22 @@ func createSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
 	action.Exit(rsp, err)
 }
 
+func updateSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
+	action := newAction(cmd)
+	integration := args[0]
+	database := action.getStringEnv("database", "SNOWSQL_DATABASE")
+	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
+	role := action.getStringEnv("role", "SNOWSQL_ROLE")
+	username := action.getStringEnv("username", "SNOWSQL_USER")
+	password := action.getStringEnv("password", "SNOWSQL_PWD")
+	creds := rai.SnowflakeCredentials{Username: username, Password: password}
+	name := fmt.Sprintf("%s.%s", database, schema)
+	action.Start("Update Snowflake database link '%s' (%s)", name, integration)
+	err := action.Client().UpdateSnowflakeDatabaseLink(
+		integration, database, schema, role, &creds)
+	action.Exit(nil, err)
+}
+
 func deleteSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	integration := args[0]
