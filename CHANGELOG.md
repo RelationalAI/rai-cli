@@ -1,10 +1,12 @@
 # Changelog
 
-## v0.2.0-alpha
+## v0.1.7-alpha
 
 * Remove engine flag from create integration command
 * Remove is-view from create datastream command
+* Make Snowflake credentials optional for create & delete datastream commands
 * Add support for updating credentials used in Snowflake integration
+* Add support for updating Snowflake database links
 
 ## v0.1.6-alpha
 * Add Snowflake data stream status support

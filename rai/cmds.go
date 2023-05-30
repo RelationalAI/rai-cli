@@ -851,8 +851,8 @@ func createSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
 	database := action.getStringEnv("database", "SNOWSQL_DATABASE")
 	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
 	role := action.getStringEnv("role", "SNOWSQL_ROLE")
-	username := action.getStringEnv("username", "SNOWSQL_USER")
-	password := action.getStringEnv("password", "SNOWSQL_PWD")
+	username := action.getString("username")
+	password := action.getString("password")
 	creds := rai.SnowflakeCredentials{Username: username, Password: password}
 	name := fmt.Sprintf("%s.%s", database, schema)
 	action.Start("Create Snowflake database link '%s' (%s)", name, integration)
@@ -883,8 +883,8 @@ func deleteSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
 	database := action.getStringEnv("database", "SNOWSQL_DATABASE")
 	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
 	role := action.getStringEnv("role", "SNOWSQL_ROLE")
-	username := action.getStringEnv("username", "SNOWSQL_USER")
-	password := action.getStringEnv("password", "SNOWSQL_PWD")
+	username := action.getString("username")
+	password := action.getString("password")
 	creds := rai.SnowflakeCredentials{Username: username, Password: password}
 	name := fmt.Sprintf("%s.%s", database, schema)
 	action.Start("Delete Snowflake database link '%s' (%s)", name, integration)
@@ -927,7 +927,6 @@ func createSnowflakeDataStream(cmd *cobra.Command, args []string) {
 	password := action.getStringEnv("password", "SNOWSQL_PWD")
 	raiDatabase := action.getString("rai-database")
 	relation := action.getString("rai-relation")
-	creds := &rai.SnowflakeCredentials{Username: username, Password: password}
 
 	opts := &rai.DataStreamOpts{
 		RaiDatabase: raiDatabase,
@@ -935,9 +934,10 @@ func createSnowflakeDataStream(cmd *cobra.Command, args []string) {
 		ObjectName:  dataStream,
 		Role:        role,
 		Warehouse:   warehouse,
+		Credentials: rai.SnowflakeCredentials{Username: username, Password: password},
 	}
 	action.Start("Create Snowflake data stream '%s' (%s)", dataStream, integration)
-	rsp, err := action.Client().CreateSnowflakeDataStream(integration, dbLink, creds, opts)
+	rsp, err := action.Client().CreateSnowflakeDataStream(integration, dbLink, opts)
 	action.Exit(rsp, err)
 }
 
@@ -949,10 +949,15 @@ func deleteSnowflakeDataStream(cmd *cobra.Command, args []string) {
 	role := action.getStringEnv("role", "SNOWSQL_ROLE")
 	username := action.getStringEnv("username", "SNOWSQL_USER")
 	password := action.getStringEnv("password", "SNOWSQL_PWD")
-	creds := rai.SnowflakeCredentials{Username: username, Password: password}
+	var creds *rai.SnowflakeCredentials
+	if username == "" && password == "" {
+		creds = nil
+	} else {
+		creds = &rai.SnowflakeCredentials{Username: username, Password: password}
+	}
 	action.Start("Delete Snowflake data stream %s (%s)", dataStream, integration)
 	err := action.Client().DeleteSnowflakeDataStream(
-		integration, dbLink, dataStream, role, &creds,
+		integration, dbLink, dataStream, role, creds,
 	)
 	action.Exit(nil, err)
 }

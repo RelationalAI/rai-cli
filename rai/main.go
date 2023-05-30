@@ -398,8 +398,8 @@ func addCommands(root *cobra.Command) {
 		Run:   createSnowflakeDataStream}
 	cmd.Flags().String("role", "", "Snowflake role (default: SNOWSQL_ROLE env var)")
 	cmd.Flags().String("warehouse", "", "Snowflake warehouse (default: SNOWSQL_WAREHOUSE env var)")
-	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER env var)")
-	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD env var)")
+	cmd.Flags().String("username", "", "Snowflake username (default: stored integration credentials)")
+	cmd.Flags().String("password", "", "Snowflake password (default: stored integration credentials)")
 	cmd.Flags().String("rai-database", "", "RelationalAI target database name")
 	cmd.MarkFlagRequired("rai-database")
 	cmd.Flags().String("rai-relation", "", "RelationalAI target relation")
@@ -413,8 +413,8 @@ func addCommands(root *cobra.Command) {
 		Run:   deleteSnowflakeDataStream}
 	cmd.Flags().String("role", "", "Snowflake role (default: SNOWSQL_ROLE env var)")
 	cmd.Flags().String("warehouse", "", "Snowflake warehouse (default: SNOWSQL_WAREHOUSE env var)")
-	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER env var)")
-	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD env var)")
+	cmd.Flags().String("username", "", "Snowflake username (default: stored integration credentials)")
+	cmd.Flags().String("password", "", "Snowflake password (default: stored integration credentials)")
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{

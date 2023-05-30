@@ -1747,11 +1747,13 @@ type DataStreamOpts struct {
 	ObjectName  string
 	Role        string
 	Warehouse   string
+	// Optional, will fall back to stored SF credentials if not supplied
+	Credentials SnowflakeCredentials
 }
 
 // Creates a data stream to replicate data from a Snowflake table/view to a RAI relation.
 func (c *Client) CreateSnowflakeDataStream(
-	integration, dbLink string, creds *SnowflakeCredentials, opts *DataStreamOpts,
+	integration, dbLink string, opts *DataStreamOpts,
 ) (*SnowflakeDataStream, error) {
 	var result SnowflakeDataStream
 	path := makePath(PathIntegrations, integration, "database-links", dbLink, "data-streams")
@@ -1759,7 +1761,7 @@ func (c *Client) CreateSnowflakeDataStream(
 	req.Snowflake.Object = opts.ObjectName
 	req.Snowflake.Role = opts.Role
 	req.Snowflake.Warehouse = opts.Warehouse
-	req.Snowflake.Credentials = *creds
+	req.Snowflake.Credentials = opts.Credentials
 	req.RAI.Database = opts.RaiDatabase
 	req.RAI.Relation = opts.Relation
 	if err := c.Post(path, nil, &req, &result); err != nil {
@@ -1768,13 +1770,17 @@ func (c *Client) CreateSnowflakeDataStream(
 	return &result, nil
 }
 
+// Deletes a data stream
+// creds are optional; passing nil will fall back to stored SF credentials
 func (c *Client) DeleteSnowflakeDataStream(
 	integration, dbLink, objectName, role string, creds *SnowflakeCredentials,
 ) error {
 	path := makePath(PathIntegrations, integration, "database-links", dbLink, "data-streams", objectName)
 	req := deleteSnowflakeDataStreamRequest{}
 	req.Snowflake.Role = role
-	req.Snowflake.Credentials = *creds
+	if creds != nil {
+		req.Snowflake.Credentials = *creds
+	}
 	return c.Delete(path, nil, &req, nil)
 }
 
