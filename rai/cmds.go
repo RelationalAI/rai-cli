@@ -851,8 +851,8 @@ func createSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
 	database := action.getStringEnv("database", "SNOWSQL_DATABASE")
 	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
 	role := action.getStringEnv("role", "SNOWSQL_ROLE")
-	username := action.getString("username")
-	password := action.getString("password")
+	username := action.getStringEnv("username", "SNOWSQL_USER")
+	password := action.getStringEnv("password", "SNOWSQL_PWD")
 	creds := rai.SnowflakeCredentials{Username: username, Password: password}
 	name := fmt.Sprintf("%s.%s", database, schema)
 	action.Start("Create Snowflake database link '%s' (%s)", name, integration)
@@ -883,8 +883,8 @@ func deleteSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
 	database := action.getStringEnv("database", "SNOWSQL_DATABASE")
 	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
 	role := action.getStringEnv("role", "SNOWSQL_ROLE")
-	username := action.getString("username")
-	password := action.getString("password")
+	username := action.getStringEnv("username", "SNOWSQL_USER")
+	password := action.getStringEnv("password", "SNOWSQL_PWD")
 	creds := rai.SnowflakeCredentials{Username: username, Password: password}
 	name := fmt.Sprintf("%s.%s", database, schema)
 	action.Start("Delete Snowflake database link '%s' (%s)", name, integration)
@@ -923,8 +923,8 @@ func createSnowflakeDataStream(cmd *cobra.Command, args []string) {
 	dataStream := args[2]
 	role := action.getStringEnv("role", "SNOWSQL_ROLE")
 	warehouse := action.getStringEnv("warehouse", "SNOWSQL_WAREHOUSE")
-	username := action.getStringEnv("username", "SNOWSQL_USER")
-	password := action.getStringEnv("password", "SNOWSQL_PWD")
+	username := action.getString("username")
+	password := action.getString("password")
 	raiDatabase := action.getString("rai-database")
 	relation := action.getString("rai-relation")
 
@@ -947,8 +947,8 @@ func deleteSnowflakeDataStream(cmd *cobra.Command, args []string) {
 	dbLink := args[1]
 	dataStream := args[2]
 	role := action.getStringEnv("role", "SNOWSQL_ROLE")
-	username := action.getStringEnv("username", "SNOWSQL_USER")
-	password := action.getStringEnv("password", "SNOWSQL_PWD")
+	username := action.getString("username")
+	password := action.getString("password")
 	var creds *rai.SnowflakeCredentials
 	if username == "" && password == "" {
 		creds = nil
