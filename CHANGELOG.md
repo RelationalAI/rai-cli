@@ -1,6 +1,10 @@
 # Changelog
 
-## v0.1.7-alpha
+## v0.1.9-alpha
+
+* Make schema flag optional when creating Snowflake database links
+
+## v0.1.8-alpha
 
 * Remove engine flag from create integration command
 * Remove is-view from create datastream command
@@ -9,6 +13,7 @@
 * Add support for updating Snowflake database links
 
 ## v0.1.6-alpha
+
 * Add Snowflake data stream status support
 * Modify Snowflake data stream create for view support
 
