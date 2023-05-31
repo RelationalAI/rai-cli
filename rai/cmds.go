@@ -849,7 +849,7 @@ func createSnowflakeDatabaseLink(cmd *cobra.Command, args []string) {
 	action := newAction(cmd)
 	integration := args[0]
 	database := action.getStringEnv("database", "SNOWSQL_DATABASE")
-	schema := action.getStringEnv("schema", "SNOWSQL_SCHEMA")
+	schema := action.getString("schema")
 	role := action.getStringEnv("role", "SNOWSQL_ROLE")
 	username := action.getStringEnv("username", "SNOWSQL_USER")
 	password := action.getStringEnv("password", "SNOWSQL_PWD")

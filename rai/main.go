@@ -344,7 +344,7 @@ func addCommands(root *cobra.Command) {
 		Args:  cobra.ExactArgs(1),
 		Run:   createSnowflakeDatabaseLink}
 	cmd.Flags().String("database", "", "Snowflake database (default: SNOWSQL_DATABASE)")
-	cmd.Flags().String("schema", "", "Snowflake schema (default: SNOWSQL_SCHEMA)")
+	cmd.Flags().String("schema", "", "Snowflake schema (default: 'RAI')")
 	cmd.Flags().String("role", "", "Snowflake role (default: SNOWSQL_ROLE)")
 	cmd.Flags().String("username", "", "Snowflake username (default: SNOWSQL_USER)")
 	cmd.Flags().String("password", "", "Snowflake password (default: SNOWSQL_PWD)")
