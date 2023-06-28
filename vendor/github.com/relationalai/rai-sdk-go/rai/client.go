@@ -171,13 +171,12 @@ func (c *Client) GetAccessToken(creds *ClientCredentials) (*AccessToken, error) 
 	if err != nil {
 		return nil, err
 	}
-	req = req.WithContext(c.ctx)
 	c.ensureHeaders(req, nil)
-	rsp, err := c.HttpClient.Do(req)
+	rsp, err := c.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer rsp.Body.Close()
+
 	token := &AccessToken{}
 	if err = token.Load(rsp.Body); err != nil {
 		return nil, err
@@ -1675,6 +1674,14 @@ func (c *Client) ListSnowflakeIntegrations() ([]Integration, error) {
 // Snowflake Database Links
 //
 
+// Creates a new Snowflake database link, populating the target db and schema
+// with Snowflake integration objects.
+//
+// schema is optional, and will default to 'rai' when left empty
+//
+// If the schema doesn't exist when CreateSnowflakeDatabaseLink is called, it
+// will be created using the supplied credentials and ownership will be
+// assigned to the specified role
 func (c *Client) CreateSnowflakeDatabaseLink(
 	integration, database, schema, role string, creds *SnowflakeCredentials,
 ) (*SnowflakeDatabaseLink, error) {

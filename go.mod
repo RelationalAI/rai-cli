@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/pkg/errors v0.9.1
-	github.com/relationalai/rai-sdk-go v0.5.3-alpha
+	github.com/relationalai/rai-sdk-go v0.5.5-alpha
 	github.com/spf13/cobra v1.5.0
 )
 
