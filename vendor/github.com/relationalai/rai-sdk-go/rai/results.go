@@ -1420,7 +1420,7 @@ func newConstColumn(t ConstType, nrows int) Column {
 	if matchPrefix(t, "rel", "base", "_") {
 		switch t[2].(string) {
 		case "AutoNumber":
-			return newLiteralColumn(t[3].(int64), nrows)
+			return newLiteralColumn(t[3].(uint64), nrows)
 		case "Date":
 			d := DateFromRataDie(t[3].(int64))
 			return newLiteralColumn(d, nrows)
@@ -1534,7 +1534,7 @@ func newBuiltinValueColumn(vt ValueType, c Column, nrows int) Column {
 	if matchPrefix(vt, "rel", "base", "_") {
 		switch vt[2].(string) {
 		case "AutoNumber":
-			return c // primitiveColumn[int64]
+			return c // primitiveColumn[uint64]
 		case "Date":
 			return newDateColumn(c.(DataColumn[int64]))
 		case "DateTime":
@@ -1833,7 +1833,7 @@ func builtinType(vt ValueType) reflect.Type {
 	if matchPrefix(vt, "rel", "base", "_") {
 		switch vt[2].(string) {
 		case "AutoNumber":
-			return Int64Type
+			return Uint64Type
 		case "Date":
 			return TimeType
 		case "DateTime":
@@ -1860,7 +1860,7 @@ func builtinValue(ct ConstType) any {
 	if matchPrefix(ct, "rel", "base", "_") {
 		switch ct[2].(string) {
 		case "AutoNumber":
-			return ct[3].(int64)
+			return ct[3].(uint64)
 		case "Date":
 			return DateFromRataDie(ct[3].(int64))
 		case "DateTime":

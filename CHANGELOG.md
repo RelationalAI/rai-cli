@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.10-alpha
+* Update get-snowflake-data-stream-status response format
+
 ## v0.1.9-alpha
 
 * Make schema flag optional when creating Snowflake database links

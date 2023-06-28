@@ -399,6 +399,7 @@ type SnowflakeDatabaseLink struct {
 	Snowflake   struct {
 		Database string `json:"database"`
 		Schema   string `json:"schema"`
+		Role     string `json:"role"`
 	} `json:"snowflake"`
 }
 
@@ -470,9 +471,16 @@ type deleteSnowflakeDataStreamRequest struct {
 }
 
 type SnowflakeDataStreamStatus struct {
-	ID                   string `json:"id"`
-	SnowflakeUnloadStart int64  `json:"snowflakeUnloadStart"` //  time of stream actions started from snowflake
-	RaiLoadEnd           int64  `json:"raiLoadEnd"`           // time of stream actions complete
-	Name                 string `json:"name"`                 // integration + dataStream name
-	Account              string `json:"account"`
+	ID              string           `json:"id"`
+	LatestReceived  *DataStreamBatch `json:"latestReceived"`  // latest batch sent from SF
+	LatestProcessed *DataStreamBatch `json:"latestProcessed"` // latest batch fully processed (loaded into RAI)
+	Name            string           `json:"name"`            // integration + dataStream name
+	Account         string           `json:"account"`
+}
+
+type DataStreamBatch struct {
+	SnowflakeUnloadTime int64 `json:"sfUnloadTime"`     // when this batch started unloading from SF
+	OperationEndTime    int64 `json:"operationEndTime"` // time when the step being described ended
+	Rows                int64 `json:"rows"`             // total rows
+	Bytes               int64 `json:"bytes"`            // total bytes
 }
