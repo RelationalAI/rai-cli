@@ -50,9 +50,9 @@ func (a *AccessToken) ExpiresOn() int64 {
 	return a.CreatedOn + int64(a.ExpiresIn)
 }
 
-// Anticipate access token expiration by 5 seconds
+// Anticipate access token expiration by 60 seconds
 func (a *AccessToken) IsExpired() bool {
-	return nowEpochSecs() > a.ExpiresOn()-5
+	return nowEpochSecs() > a.ExpiresOn()-60
 }
 
 type ClientCredentials struct {
