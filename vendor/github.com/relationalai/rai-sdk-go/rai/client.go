@@ -176,7 +176,7 @@ func (c *Client) GetAccessToken(creds *ClientCredentials) (*AccessToken, error) 
 	if err != nil {
 		return nil, err
 	}
-
+	defer rsp.Body.Close()
 	token := &AccessToken{}
 	if err = token.Load(rsp.Body); err != nil {
 		return nil, err

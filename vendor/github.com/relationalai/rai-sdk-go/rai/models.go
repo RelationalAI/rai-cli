@@ -158,6 +158,7 @@ type Transaction struct {
 	Database              string           `json:"database_name,omitempty"`
 	Query                 string           `json:"query,omitempty"`
 	State                 TransactionState `json:"state"`
+	AbortReason           string           `json:"abort_reason,omitempty"`
 	ReadOnly              bool             `json:"read_only,omitempty"`
 	CreatedBy             string           `json:"created_by,omitempty"`
 	CreatedOn             int64            `json:"created_on,omitempty"`
