@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.11-alpha
+* Bump rai-go-sdk version to enable the latest features
+
 ## v0.1.10-alpha
 * Update get-snowflake-data-stream-status response format
 
