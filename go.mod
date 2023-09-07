@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/pkg/errors v0.9.1
-	github.com/relationalai/rai-sdk-go v0.5.9-alpha
+	github.com/relationalai/rai-sdk-go v0.5.10-alpha
 	github.com/spf13/cobra v1.5.0
 )
 
@@ -12,6 +12,7 @@ require (
 	github.com/apache/arrow/go/v7 v7.0.1 // indirect
 	github.com/goccy/go-json v0.9.10 // indirect
 	github.com/google/flatbuffers v2.0.6+incompatible // indirect
+	github.com/google/uuid v1.1.2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.8 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
