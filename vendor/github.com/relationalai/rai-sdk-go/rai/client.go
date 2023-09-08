@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/apache/arrow/go/v7/arrow/ipc"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/relationalai/rai-sdk-go/rai/pb"
 	"google.golang.org/protobuf/proto"
@@ -205,6 +206,9 @@ func (c *Client) ensureHeaders(req *http.Request, headers map[string]string) {
 	if v := req.Header.Get("user-agent"); v == "" {
 		req.Header.Set("User-Agent", userAgent)
 	}
+	if v := req.Header.Get("X-Request-Id"); v == "" {
+		req.Header.Set("X-Request-Id", uuid.New().String())
+	}
 
 	// add extra headers
 	for h, v := range headers {
@@ -311,10 +315,11 @@ type HTTPError struct {
 
 func (e HTTPError) Error() string {
 	statusText := http.StatusText(e.StatusCode)
+	xRequestId := e.Headers.Get("X-Request-Id")
 	if e.Body != "" {
-		return fmt.Sprintf("%d %s %s\n%s", e.StatusCode, e.Headers, statusText, e.Body)
+		return fmt.Sprintf("%d %s %s\n%s", e.StatusCode, statusText, xRequestId, e.Body)
 	}
-	return fmt.Sprintf("%d %s %s", e.StatusCode, e.Headers, statusText)
+	return fmt.Sprintf("%d %s %s", e.StatusCode, statusText, xRequestId)
 }
 
 func newHTTPError(status int, headers http.Header, body string) error {
