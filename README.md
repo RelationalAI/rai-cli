@@ -9,11 +9,11 @@ The RelationalAI (RAI) CLI provides access to the RAI APIs from the command line
 
 ### Building the CLI
 
-Update dependencies with the  `tidy` script
+1. Update dependencies with the  `tidy` script
 
     ./tidy
 
-Build the `rai` binary using the `go` tool
+2. Build the `rai` binary using the `go` tool
 
     go build -o build/rai rai/*
 
@@ -21,7 +21,7 @@ Build the `rai` binary using the `go` tool
 
     ./make
 
-Installation consists of simply putting the `rai` binary on your path.
+Installation consists of simply putting the `rai` binary that was generated in the build folder in step 2 on your path.
 
 ### Create a configuration file
 
@@ -42,8 +42,8 @@ client_secret = <your client secret>
 # client_credentials_url = https://login.relationalai.com/oauth/token
 ```
 
-Client credentials can be created using the RAI console at
-https://console.relationalai.com/login
+Client credentials can be created using the [RAI console](https://console.relationalai.com/login) by going to Settings -> Users
+
 
 You can copy `config.spec` from the root of this repo and modify as needed.
 
