@@ -209,6 +209,13 @@ func addCommands(root *cobra.Command) {
 	root.AddCommand(cmd)
 
 	cmd = &cobra.Command{
+		Use:   "list-transactions",
+		Short: "List transaction history",
+		Args:  cobra.ExactArgs(0),
+		Run:   listTransactions}
+	root.AddCommand(cmd)
+
+	cmd = &cobra.Command{
 		Use:   "load-csv database file",
 		Short: "Load a CSV file into the given database",
 		Args:  cobra.ExactArgs(2),
