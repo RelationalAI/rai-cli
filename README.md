@@ -52,6 +52,12 @@ You can copy `config.spec` from the root of this repo and modify as needed.
     cd ./test
     ./run-all
 
+## Getting Started
+
+To see available commands go to `build` directory and run:
+
+    ./rai -h
+
 ## Support
 
 You can reach the RAI developer support team at `support@relational.ai`
