@@ -1516,8 +1516,8 @@ func genLoadCSV(relation string, opts *CSVOptions) string {
 	b := new(strings.Builder)
 	genSyntaxConfig(b, opts)
 	genSchemaConfig(b, opts)
-	b.WriteString("def config:data = data\n")
-	b.WriteString(fmt.Sprintf("def insert:%s = load_csv[config]", relation))
+	b.WriteString("def config[:data]: data\n")
+	b.WriteString(fmt.Sprintf("def insert[:%s]: load_csv[config]", relation))
 	return b.String()
 }
 
@@ -1541,8 +1541,8 @@ func (c *Client) LoadJSON(
 		return nil, err
 	}
 	b := new(strings.Builder)
-	b.WriteString("def config:data = data\n")
-	b.WriteString(fmt.Sprintf("def insert:%s = load_json[config]", relation))
+	b.WriteString("def config[:data]: data\n")
+	b.WriteString(fmt.Sprintf("def insert[:%s]: load_json[config]", relation))
 	inputs := map[string]string{"data": string(data)}
 	return c.ExecuteV1(database, engine, b.String(), inputs, false)
 }
